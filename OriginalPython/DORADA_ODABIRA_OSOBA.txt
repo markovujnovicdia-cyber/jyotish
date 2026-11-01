@@ -1,0 +1,5 @@
+Dorada odabira osoba – 09.10.2026.
+
+Padajući izbornik osoba zamijenjen je stalno vidljivim popisom za odabir jednim klikom. Odabir se pamti pri prelasku između stranica i povezan je s jedinstvenim ID-jem osobe. Isto je primijenjeno na odabir osoba u modulu sinastrije.
+
+Raspakirajte aplikaciju u novu mapu i pokrenite kao prije. Ako u postojećoj instalaciji imate novije podatke, kopirajte svoju postojeću datoteku data/jyotish.db u novu mapu prije pokretanja.

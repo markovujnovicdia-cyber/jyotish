@@ -1,0 +1,615 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+		4418EDA2C6D430064FA6F960 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "AstroMath.swift";
+			sourceTree = "<group>";
+		};
+		3378DDC8C4B7D133DC48490E = {
+			isa = "PBXBuildFile";
+			fileRef = 4418EDA2C6D430064FA6F960;
+		};
+		6CAEE48562FAF1D945B117C8 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "ContentView.swift";
+			sourceTree = "<group>";
+		};
+		9488963B31486D71F43514EB = {
+			isa = "PBXBuildFile";
+			fileRef = 6CAEE48562FAF1D945B117C8;
+		};
+		6487885AE56426E1F2C08B98 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "CoordinateView.swift";
+			sourceTree = "<group>";
+		};
+		677635F80B764797A2198386 = {
+			isa = "PBXBuildFile";
+			fileRef = 6487885AE56426E1F2C08B98;
+		};
+		F2CC60288139C99A7B8390B2 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "EphemerisClient.swift";
+			sourceTree = "<group>";
+		};
+		A3F24FF4A90AEEEC49E29007 = {
+			isa = "PBXBuildFile";
+			fileRef = F2CC60288139C99A7B8390B2;
+		};
+		3EE45CF8324D3C77C96FC0C3 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "JyotishApp.swift";
+			sourceTree = "<group>";
+		};
+		248C287E62D8291B49A73671 = {
+			isa = "PBXBuildFile";
+			fileRef = 3EE45CF8324D3C77C96FC0C3;
+		};
+		ABCFDCB906CBD35EB3D7E635 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "NativeCalculationTests.swift";
+			sourceTree = "<group>";
+		};
+		1B1669FE33AC4DCA27D985B9 = {
+			isa = "PBXBuildFile";
+			fileRef = ABCFDCB906CBD35EB3D7E635;
+		};
+		434D3466F0BD39D050B65782 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "OfflineFlowTests.swift";
+			sourceTree = "<group>";
+		};
+		117F4C47526D4411B765E564 = {
+			isa = "PBXBuildFile";
+			fileRef = 434D3466F0BD39D050B65782;
+		};
+		D660B864725B26C033A5692B = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "folder.assetcatalog";
+			path = "Assets.xcassets";
+			sourceTree = "<group>";
+		};
+		E0E0E6B9F9F12C5D838CB7F7 = {
+			isa = "PBXBuildFile";
+			fileRef = D660B864725B26C033A5692B;
+		};
+		8A7C10722D60C249B0638574 = {
+			isa = "XCLocalSwiftPackageReference";
+			relativePath = "Packages/JyotishCore";
+		};
+		C37D81833189F5039464A9C7 = {
+			isa = "XCSwiftPackageProductDependency";
+			package = 8A7C10722D60C249B0638574;
+			productName = "JyotishCore";
+		};
+		0F54A936FA2E56E554716CFD = {
+			isa = "PBXBuildFile";
+			productRef = C37D81833189F5039464A9C7;
+		};
+		96074E1152F105B34D4FFE05 = {
+			isa = "XCSwiftPackageProductDependency";
+			package = 8A7C10722D60C249B0638574;
+			productName = "JyotishCore";
+		};
+		E7978E36FA9784CF1E7393AF = {
+			isa = "PBXBuildFile";
+			productRef = 96074E1152F105B34D4FFE05;
+		};
+		640DFAA02B6F0D15014DA063 = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.application";
+			includeInIndex = 0;
+			path = "Jyotish.app";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
+		CC09F57206F8D9341D993565 = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+				3378DDC8C4B7D133DC48490E,
+				9488963B31486D71F43514EB,
+				677635F80B764797A2198386,
+				A3F24FF4A90AEEEC49E29007,
+				248C287E62D8291B49A73671,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57972A9DDAB47EA71F66B8E6 = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+				0F54A936FA2E56E554716CFD,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A2DAB98475F35A5D33748D4 = {
+			isa = "PBXResourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+				E0E0E6B9F9F12C5D838CB7F7,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		630C06C159052648D7CC1B2E = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				SWIFT_VERSION = "5.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				TARGETED_DEVICE_FAMILY = 1;
+				SDKROOT = "iphoneos";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = "1.0";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jyotish";
+				INFOPLIST_KEY_CFBundleDisplayName = "Jyotish";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = "YES";
+				INFOPLIST_KEY_UILaunchScreen_Generation = "YES";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
+				SUPPORTS_MACCATALYST = "NO";
+				ENABLE_PREVIEWS = "YES";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+			};
+			name = "Debug";
+		};
+		EFC5B6E9B6010B117125E5C7 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				SWIFT_VERSION = "5.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				TARGETED_DEVICE_FAMILY = 1;
+				SDKROOT = "iphoneos";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = "1.0";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jyotish";
+				INFOPLIST_KEY_CFBundleDisplayName = "Jyotish";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = "YES";
+				INFOPLIST_KEY_UILaunchScreen_Generation = "YES";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
+				SUPPORTS_MACCATALYST = "NO";
+				ENABLE_PREVIEWS = "YES";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = "Release";
+		};
+		968B57C48583AEC183A1A970 = {
+			isa = "XCConfigurationList";
+			buildConfigurations = (
+				630C06C159052648D7CC1B2E,
+				EFC5B6E9B6010B117125E5C7,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release";
+		};
+		42AEFBAE01D2DFD981F7DA7D = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = 968B57C48583AEC183A1A970;
+			buildPhases = (
+				CC09F57206F8D9341D993565,
+				57972A9DDAB47EA71F66B8E6,
+				5A2DAB98475F35A5D33748D4,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Jyotish";
+			productName = "Jyotish";
+			productReference = 640DFAA02B6F0D15014DA063;
+			productType = "com.apple.product-type.application";
+			packageProductDependencies = (
+				C37D81833189F5039464A9C7,
+			);
+		};
+		B0DC8EF81DA634E746C60ABC = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.cfbundle";
+			includeInIndex = 0;
+			path = "JyotishTests.xctest";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
+		E52E8A29CFF8FECAF04332FB = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+				1B1669FE33AC4DCA27D985B9,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B89C23BCD9941378615CB0F = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+				E7978E36FA9784CF1E7393AF,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E5F0FFC4CA459A4552743A0 = {
+			isa = "PBXResourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5499F08E4A83CBC851443EE0 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				SWIFT_VERSION = "5.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				TARGETED_DEVICE_FAMILY = 1;
+				SDKROOT = "iphoneos";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = "1.0";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jyotish.tests";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Jyotish.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Jyotish";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+			};
+			name = "Debug";
+		};
+		52892D14874B8486B7197F89 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				SWIFT_VERSION = "5.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				TARGETED_DEVICE_FAMILY = 1;
+				SDKROOT = "iphoneos";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = "1.0";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jyotish.tests";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Jyotish.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Jyotish";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = "Release";
+		};
+		0F16943E9BC629136E71D0C1 = {
+			isa = "XCConfigurationList";
+			buildConfigurations = (
+				5499F08E4A83CBC851443EE0,
+				52892D14874B8486B7197F89,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release";
+		};
+		A03C3919A421BBAF19E2F8BC = {
+			isa = "PBXContainerItemProxy";
+			containerPortal = 46F86FAA6BBF9AC94A7E4595;
+			proxyType = 1;
+			remoteGlobalIDString = 42AEFBAE01D2DFD981F7DA7D;
+			remoteInfo = "Jyotish";
+		};
+		D05BDA03DB7D301797DF7898 = {
+			isa = "PBXTargetDependency";
+			target = 42AEFBAE01D2DFD981F7DA7D;
+			targetProxy = A03C3919A421BBAF19E2F8BC;
+		};
+		9E2B1BAE6F20B5451C02C0D9 = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = 0F16943E9BC629136E71D0C1;
+			buildPhases = (
+				E52E8A29CFF8FECAF04332FB,
+				1B89C23BCD9941378615CB0F,
+				2E5F0FFC4CA459A4552743A0,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D05BDA03DB7D301797DF7898,
+			);
+			name = "JyotishTests";
+			productName = "JyotishTests";
+			productReference = B0DC8EF81DA634E746C60ABC;
+			productType = "com.apple.product-type.bundle.unit-test";
+			packageProductDependencies = (
+				96074E1152F105B34D4FFE05,
+			);
+		};
+		1E005449E37B0D50F63A4E3F = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.cfbundle";
+			includeInIndex = 0;
+			path = "JyotishUITests.xctest";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
+		665A097111941C495D0A1B85 = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+				117F4C47526D4411B765E564,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C6130A3CE09966E36F26F812 = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E652C8D7A0F9E7CF60B5FFF9 = {
+			isa = "PBXResourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		29DC5433F5F53C34D1B0A16A = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				SWIFT_VERSION = "5.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				TARGETED_DEVICE_FAMILY = 1;
+				SDKROOT = "iphoneos";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = "1.0";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jyotish.uitests";
+				TEST_TARGET_NAME = "Jyotish";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+			};
+			name = "Debug";
+		};
+		60684ECB1B32ABEF84B6DE81 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				SWIFT_VERSION = "5.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				TARGETED_DEVICE_FAMILY = 1;
+				SDKROOT = "iphoneos";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = "1.0";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.example.jyotish.uitests";
+				TEST_TARGET_NAME = "Jyotish";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = "Release";
+		};
+		4D25FFF992BC15AD15E5525D = {
+			isa = "XCConfigurationList";
+			buildConfigurations = (
+				29DC5433F5F53C34D1B0A16A,
+				60684ECB1B32ABEF84B6DE81,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release";
+		};
+		EDC11DE4563C8C7597B7B587 = {
+			isa = "PBXContainerItemProxy";
+			containerPortal = 46F86FAA6BBF9AC94A7E4595;
+			proxyType = 1;
+			remoteGlobalIDString = 42AEFBAE01D2DFD981F7DA7D;
+			remoteInfo = "Jyotish";
+		};
+		BEDA378C894844DF208BDF6D = {
+			isa = "PBXTargetDependency";
+			target = 42AEFBAE01D2DFD981F7DA7D;
+			targetProxy = EDC11DE4563C8C7597B7B587;
+		};
+		EDAC0CE6757FBD185AFE7AE8 = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = 4D25FFF992BC15AD15E5525D;
+			buildPhases = (
+				665A097111941C495D0A1B85,
+				C6130A3CE09966E36F26F812,
+				E652C8D7A0F9E7CF60B5FFF9,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BEDA378C894844DF208BDF6D,
+			);
+			name = "JyotishUITests";
+			productName = "JyotishUITests";
+			productReference = 1E005449E37B0D50F63A4E3F;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		17C314E7AB04405FAAFF849F = {
+			isa = "PBXGroup";
+			children = (
+				4418EDA2C6D430064FA6F960,
+				6CAEE48562FAF1D945B117C8,
+				6487885AE56426E1F2C08B98,
+				F2CC60288139C99A7B8390B2,
+				3EE45CF8324D3C77C96FC0C3,
+				D660B864725B26C033A5692B,
+			);
+			path = "iPhoneSwiftUI";
+			sourceTree = "<group>";
+		};
+		967B2475C30B79ABAB7DF0BF = {
+			isa = "PBXGroup";
+			children = (
+				ABCFDCB906CBD35EB3D7E635,
+			);
+			path = "JyotishTests";
+			sourceTree = "<group>";
+		};
+		CA964DCF6C4EAFE9A6F153EF = {
+			isa = "PBXGroup";
+			children = (
+				434D3466F0BD39D050B65782,
+			);
+			path = "JyotishUITests";
+			sourceTree = "<group>";
+		};
+		B1D86BB76A9EFDA02F45A591 = {
+			isa = "PBXGroup";
+			children = (
+				640DFAA02B6F0D15014DA063,
+				B0DC8EF81DA634E746C60ABC,
+				1E005449E37B0D50F63A4E3F,
+			);
+			name = "Products";
+			sourceTree = "<group>";
+		};
+		21432F6A11B6E8C464CB01EE = {
+			isa = "PBXGroup";
+			children = (
+				17C314E7AB04405FAAFF849F,
+				967B2475C30B79ABAB7DF0BF,
+				CA964DCF6C4EAFE9A6F153EF,
+				B1D86BB76A9EFDA02F45A591,
+			);
+			sourceTree = "<group>";
+		};
+		ADF40BCE2162EF1CA779B4E9 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = "NO";
+				CLANG_ENABLE_MODULES = "YES";
+				CLANG_ENABLE_OBJC_ARC = "YES";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = "YES";
+				GCC_C_LANGUAGE_STANDARD = "gnu11";
+				GCC_NO_COMMON_BLOCKS = "YES";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				SDKROOT = "iphoneos";
+				SWIFT_VERSION = "5.0";
+				ENABLE_USER_SCRIPT_SANDBOXING = "YES";
+				DEBUG_INFORMATION_FORMAT = "dwarf";
+				ENABLE_TESTABILITY = "YES";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = "YES";
+			};
+			name = "Debug";
+		};
+		AD7A1115CD496337C933A17C = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = "NO";
+				CLANG_ENABLE_MODULES = "YES";
+				CLANG_ENABLE_OBJC_ARC = "YES";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = "YES";
+				GCC_C_LANGUAGE_STANDARD = "gnu11";
+				GCC_NO_COMMON_BLOCKS = "YES";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				SDKROOT = "iphoneos";
+				SWIFT_VERSION = "5.0";
+				ENABLE_USER_SCRIPT_SANDBOXING = "YES";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				SWIFT_COMPILATION_MODE = "wholemodule";
+				VALIDATE_PRODUCT = "YES";
+			};
+			name = "Release";
+		};
+		574BAF3FDCB32849225E119A = {
+			isa = "XCConfigurationList";
+			buildConfigurations = (
+				ADF40BCE2162EF1CA779B4E9,
+				AD7A1115CD496337C933A17C,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release";
+		};
+		46F86FAA6BBF9AC94A7E4595 = {
+			isa = "PBXProject";
+			attributes = {
+				BuildIndependentTargetsInParallel = "YES";
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					42AEFBAE01D2DFD981F7DA7D = {
+						CreatedOnToolsVersion = "16.0";
+					};
+					9E2B1BAE6F20B5451C02C0D9 = {
+						CreatedOnToolsVersion = "16.0";
+						TestTargetID = 42AEFBAE01D2DFD981F7DA7D;
+					};
+					EDAC0CE6757FBD185AFE7AE8 = {
+						CreatedOnToolsVersion = "16.0";
+						TestTargetID = 42AEFBAE01D2DFD981F7DA7D;
+					};
+				};
+			};
+			buildConfigurationList = 574BAF3FDCB32849225E119A;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "hr";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				"hr",
+				"en",
+				"Base",
+			);
+			mainGroup = 21432F6A11B6E8C464CB01EE;
+			packageReferences = (
+				8A7C10722D60C249B0638574,
+			);
+			productRefGroup = B1D86BB76A9EFDA02F45A591;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				42AEFBAE01D2DFD981F7DA7D,
+				9E2B1BAE6F20B5451C02C0D9,
+				EDAC0CE6757FBD185AFE7AE8,
+			);
+		};
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595;
+}

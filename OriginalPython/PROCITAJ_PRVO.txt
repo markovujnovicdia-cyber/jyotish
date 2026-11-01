@@ -1,0 +1,18 @@
+JYOTISH – CIJELA DORAĐENA APLIKACIJA
+
+1. Raspakirajte ZIP i stavite mapu Jyotish u Dokumente.
+2. Otvorite Pokreni Jyotish.command dvostrukim klikom.
+3. Aplikacija se otvara u pregledniku. Prozor Terminala ostavite otvoren.
+
+Ako Mac blokira otvaranje, pokušajte desnim klikom na Pokreni Jyotish.command pa Otvori.
+Aplikacija koristi Python 3 i postojeće lokalno okruženje. Ako nedostaju paketi,
+prvo pokretanje automatski ih instalira, uz internetsku vezu.
+
+Ovo je cijela aplikacija, s ugrađenom doradom; nije potrebno pokretati Primijeni_doradu.
+Podaci o osobama iz poslanog ZIP-a uključeni su u data/jyotish.db.
+Ako ste nakon slanja ZIP-a mijenjali osobe, zatvorite aplikaciju i kopirajte svoju
+noviju data/jyotish.db iz stare mape u ovu novu mapu.
+Staru aplikaciju možete zadržati u zasebnoj mapi.
+
+Karta je početna; Osobe su zadnje; sinastrija je uklonjena iz navigacije.
+Dorađeni prikazi, tranzitni kotač i 20 sahama. Metoda sahama dokumentirana je u DORADA.md.

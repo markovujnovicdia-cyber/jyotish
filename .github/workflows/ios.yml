@@ -1,0 +1,32 @@
+name: Native iOS validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build core and run iPhone simulator tests
+        run: bash scripts/validate-ios.sh
+      - name: Preserve current-run logs and xcresult bundles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-validation
+          path: |
+            .validation/ios/run.*/xcodebuild.log
+            .validation/ios/run.*/Jyotish.xcresult
+          include-hidden-files: true
+          if-no-files-found: warn

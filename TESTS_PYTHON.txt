@@ -1,0 +1,8 @@
+........................................................................ [ 31%]
+.F...................................................................... [ 63%]
+..........F............................................................. [ 95%]
+...........                                                              [100%]
+=========================== short test summary info ============================
+FAILED tests/test_export.py::test_pdf_report_produces_nonempty_bytes - fpdf.errors.FPDFUnicodeEncodingException: Character "đ" at index 44 in text is outside the range of characters supported by the font used: "helvetica". Please consider using a Unicode font.
+FAILED tests/test_synastry_lea_marko.py::test_normal_full_report_and_pdf_generate_without_errors - fpdf.errors.FPDFUnicodeEncodingException: Character "ć" at index 32 in text is outside the range of characters supported by the font used: "helvetica". Please consider using a Unicode font.
+2 failed, 225 passed in 0.61s

@@ -1,0 +1,34 @@
+PROVJERA IZRAČUNA — 1.10.2026.
+
+Sahame: 20 formula prema PVR Narasimha Rao, Vedic Astrology: An Integrated
+Approach, §28.8, tablica 74. Primjenjuju se zamjene dan/noć prema tablici
+te dodatak 30° kad C nije na luku od B do A. Postoje i druge tradicije.
+Dan/noć sada se određuje visinom Sunca, a ne brojem kuće.
+Godišnji interni rezultati i prikaz koriste isti izračun sahama.
+
+Koju kartu koristi pojedini prikaz:
+- Tranzitni kotač: NATALNE sahame; tranzitni planeti su vanjski prsten.
+- Sahame / Natalna: karta rođenja.
+- Sahame / Godišnja i Varshaphala / Sahame: odabrani solarni povratak.
+- Sahame / Mjesečna: odabrana karta Masa Praveshe.
+
+Natalne daše: Vimshottari iz natalnog Mjeseca; godina 365,2425 dana.
+Ispravljena su podrazdoblja prve mahadaše: dijeli se puna mahadaša,
+čiji početak može biti prije rođenja, umjesto preostalog dijela od rođenja.
+Granice podrazdoblja zatvaraju se točno do kraja roditeljskog razdoblja.
+Prikaz Daše i daše na kotaču koriste odabrani datum u 12:00 UTC.
+
+Godišnja daša: Mudda. Početni vladar iz natalne nakshatre i navršene dobi,
+preostali udio iz natalnog Mjeseca. Aplikacija zadržava konvenciju 360
+civilnih dana (24 h po danu). PVR §30.3 opisuje solarne dane kao pomak
+Sunca od 1°; to NIJE ista vremenska konvencija. Ciklus aplikacije završava
+prije idućeg solarnog povratka. Nema zasebne mjesečne daše.
+
+Provjera: 13 računskih regresijskih testova i provjera Python sintakse.
+Nije provedena usporedba osobnog horoskopa s JHora niti puna provjera
+astronomskog pogona i svih zaslona. Rezultati ovise o podacima rođenja,
+vremenskoj zoni, lokaciji, ayanamshi i odabranoj vremenskoj konvenciji.
+
+Pokretanje: raspakiraj cijeli ZIP i pokreni launcher iz nove mape.
+Ako imaš novije unesene osobe, prethodno sačuvaj svoju data/jyotish.db;
+u paketu je ranije dostavljena snimka baze podataka.
