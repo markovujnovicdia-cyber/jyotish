@@ -1,9 +1,21 @@
 #include "include/SwissBridge.h"
 #include "swephexp.h"
+#include <stdlib.h>
+#include <string.h>
 
-void jy_set_path(const char *path) {
-    swe_set_ephe_path((char *)path);
+int jy_max_path_bytes(void) {
+    /* Match swe_set_ephe_path's actual bound, including filename allowance. */
+    return AS_MAXCH - 1 - 13;
+}
+int jy_set_path(const char *path) {
+    const char *override = getenv("SE_EPHE_PATH");
+    if (path == NULL || *path == '\0' || strlen(path) > (size_t)jy_max_path_bytes()) return -1;
+    /* Do not silently let a developer environment override the bundled data. */
+    if (override != NULL && *override != '\0' &&
+        strlen(override) <= (size_t)jy_max_path_bytes() && strcmp(override, path) != 0) return -2;
+    swe_set_ephe_path(path);
     swe_set_sid_mode(SE_SIDM_LAHIRI, 0, 0);
+    return 0;
 }
 const char *jy_version(void) {
     static char version[256];

@@ -1,6 +1,8 @@
 #ifndef JY_SWISS_BRIDGE_H
 #define JY_SWISS_BRIDGE_H
-void jy_set_path(const char *path);
+int jy_max_path_bytes(void);
+/* 0 success; -1 invalid/overlong path; -2 conflicting SE_EPHE_PATH override. */
+int jy_set_path(const char *path);
 const char *jy_version(void);
 int jy_calc(double jd, int body, double *values, char *error);
 int jy_ascendant(double jd, double latitude, double longitude, double *ascendant);

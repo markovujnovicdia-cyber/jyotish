@@ -45,11 +45,15 @@ public struct Chart: Codable, Sendable {
 
 public enum EphemerisError: Error, LocalizedError {
     case invalidCoordinates, unsupportedDate, missingResources, calculation(String), unavailableHorizon
+    case resourcePathTooLong, resourcePreparation(String), conflictingResourceOverride
     public var errorDescription: String? {
         switch self {
         case .invalidCoordinates: return "Koordinate moraju biti konačne: širina između −90° i 90°, dužina od −180° do 180°."
         case .unsupportedDate: return "Ugrađene efemeride podržavaju datume od 1800. do 2399. godine."
         case .missingResources: return "Ugrađene Swiss Ephemeris datoteke nisu pronađene."
+        case .resourcePathTooLong: return "Putanja efemerida je preduga za Swiss Ephemeris, a kratka lokalna mapa nije dostupna."
+        case .resourcePreparation(let reason): return "Lokalne efemeride nije moguće pripremiti: \(reason)"
+        case .conflictingResourceOverride: return "Varijabla SE_EPHE_PATH nadjačava ugrađene efemeride. Uklonite je iz postavki pokretanja aplikacije."
         case .calculation(let reason): return "Izračun efemerida nije uspio: \(reason)"
         case .unavailableHorizon: return "Izlazak ili zalazak Sunca nije dostupan za ovu lokaciju i datum."
         }
@@ -60,6 +64,7 @@ public enum EphemerisError: Error, LocalizedError {
 /// resource path/Lahiri mode restored under the same lock. No network is used.
 public enum Ephemeris {
     private static let lock = NSRecursiveLock()
+    private static let resources = EphemerisResources()
     private static let codes: [(String, Int32)] = [
         ("Sunce", 0), ("Mjesec", 1), ("Mars", 4), ("Merkur", 2),
         ("Jupiter", 5), ("Venera", 3), ("Saturn", 6), ("Rahu", 10)
@@ -83,10 +88,13 @@ public enum Ephemeris {
     private static func configure(julianDay: Double) throws {
         // Gregorian 1800-01-01 through 2400-01-01 (exclusive).
         guard julianDay.isFinite, julianDay >= 2378496.5, julianDay < 2597641.5 else { throw EphemerisError.unsupportedDate }
-        guard let path = Bundle.module.url(forResource: "Ephemeris", withExtension: nil),
-              FileManager.default.fileExists(atPath: path.appendingPathComponent("sepl_18.se1").path),
-              FileManager.default.fileExists(atPath: path.appendingPathComponent("semo_18.se1").path) else { throw EphemerisError.missingResources }
-        path.path.withCString { jy_set_path($0) }
+        guard let source = Bundle.module.url(forResource: "Ephemeris", withExtension: nil) else {
+            throw EphemerisError.missingResources
+        }
+        let directory = try resources.directory(bundleDirectory: source)
+        let status = directory.path.withCString { jy_set_path($0) }
+        if status == -2 { throw EphemerisError.conflictingResourceOverride }
+        guard status == 0 else { throw EphemerisError.resourcePathTooLong }
     }
     private static func coordinates(_ latitude: Double, _ longitude: Double) throws {
         guard latitude.isFinite, longitude.isFinite, latitude > -90, latitude < 90,
