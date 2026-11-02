@@ -18,7 +18,11 @@ def main():
     errors = [line for line in lines if re.search(r'\berror:|Fatal error:|XCTAssert|Assertion failed|failed \(', line)]
     if not errors:
         errors = [line for line in lines if line.strip()][-10:]
-    for line in errors[:12]:
+    # GitHub caps error annotations per step. Preserve a complete bounded
+    # summary instead of hiding later failures behind the first ten lines.
+    summary = '\n'.join(line[:1600] for line in errors)[:48000]
+    print(f'::error title={escape(title + " — complete diagnostics")}::{escape(summary)}')
+    for line in errors[:6]:
         print(f'::error title={escape(title)}::{escape(line[:1600])}')
 
 
