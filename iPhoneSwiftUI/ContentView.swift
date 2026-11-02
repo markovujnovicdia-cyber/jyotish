@@ -2,7 +2,7 @@ import SwiftUI
 import JyotishCore
 
 private enum Screen: String, CaseIterable, Identifiable {
-    case natal = "Karte", dasha = "Daše", annual = "Varshaphala", masa = "Masa Praveša", transit = "Tranziti", coordinates = "Koordinate"
+    case natal = "Karte", dasha = "Daše", annual = "Varshaphala", masa = "Masa Praveša", transit = "Tranziti"
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -11,17 +11,15 @@ private enum Screen: String, CaseIterable, Identifiable {
         case .annual: return "sun.max"
         case .masa: return "calendar"
         case .transit: return "globe.europe.africa"
-        case .coordinates: return "number"
         }
     }
-    var kind: CalculationKind? {
+    var kind: CalculationKind {
         switch self {
         case .natal: return .natal
         case .dasha: return .dasha
         case .annual: return .annual
         case .masa: return .masa
         case .transit: return .transit
-        case .coordinates: return nil
         }
     }
 }
@@ -55,8 +53,8 @@ struct ContentView: View {
 
     private var person: Person? { store.people.first(where: { $0.id == selectedID }) ?? store.people.first }
     private var request: CalculationRequest? {
-        guard let person, let kind = screen.kind else { return nil }
-        return CalculationRequest(person: person, kind: kind, year: year, referenceDate: referenceDate)
+        guard let person else { return nil }
+        return CalculationRequest(person: person, kind: screen.kind, year: year, referenceDate: referenceDate)
     }
     private var birthYear: Int {
         guard let person else { return 1800 }
@@ -73,9 +71,7 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         personHeader
                         if let message = store.storageError { ErrorCard(message: message) }
-                        if screen == .coordinates {
-                            CoordinateView()
-                        } else if let person {
+                        if let person {
                             controls(for: person)
                             if calculations.isLoading {
                                 ProgressView("Računanje na uređaju…")
@@ -253,8 +249,6 @@ struct ContentView: View {
                     }
                 }
             }
-        case .coordinates:
-            EmptyView()
         }
     }
 }

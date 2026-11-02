@@ -35,7 +35,7 @@ repozitorij. Workflow još nije izvršen u ovom radu.
   svih pet komponenti Panchavargiya Bale.
 - Tajika aspekti, postojeće računske provjere 11 yoga za odabrani par i tri
   globalne provjere; svih 20 sahama i Mudda do sljedećeg solarnog povratka.
-- Svih 12 Masa Praveša, tranzitni položaji i koordinatni kalkulator.
+- Svih 12 Masa Praveša i tranzitni položaji.
 - Lokalno spremanje, uređivanje i brisanje osoba; računanje u pozadini.
 
 Nativni prikazi sadrže podatke i izračune, bez astroloških interpretacija.

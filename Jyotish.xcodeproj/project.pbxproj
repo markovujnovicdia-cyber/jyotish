@@ -25,16 +25,6 @@
 			isa = "PBXBuildFile";
 			fileRef = 6CAEE48562FAF1D945B117C8;
 		};
-		6487885AE56426E1F2C08B98 = {
-			isa = "PBXFileReference";
-			lastKnownFileType = "sourcecode.swift";
-			path = "CoordinateView.swift";
-			sourceTree = "<group>";
-		};
-		677635F80B764797A2198386 = {
-			isa = "PBXBuildFile";
-			fileRef = 6487885AE56426E1F2C08B98;
-		};
 		F2CC60288139C99A7B8390B2 = {
 			isa = "PBXFileReference";
 			lastKnownFileType = "sourcecode.swift";
@@ -120,7 +110,6 @@
 			files = (
 				3378DDC8C4B7D133DC48490E,
 				9488963B31486D71F43514EB,
-				677635F80B764797A2198386,
 				A3F24FF4A90AEEEC49E29007,
 				248C287E62D8291B49A73671,
 			);
@@ -477,7 +466,6 @@
 			children = (
 				4418EDA2C6D430064FA6F960,
 				6CAEE48562FAF1D945B117C8,
-				6487885AE56426E1F2C08B98,
 				F2CC60288139C99A7B8390B2,
 				3EE45CF8324D3C77C96FC0C3,
 				D660B864725B26C033A5692B,
