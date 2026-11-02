@@ -26,6 +26,7 @@ jobs:
         with:
           name: ios-validation
           path: |
+            .validation/ios/run.*/swift-test.log
             .validation/ios/run.*/xcodebuild.log
             .validation/ios/run.*/Jyotish.xcresult
           include-hidden-files: true

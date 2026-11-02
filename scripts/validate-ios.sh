@@ -8,11 +8,18 @@ if [[ "$(uname -s)" != Darwin ]] || ! command -v xcodebuild >/dev/null; then
 fi
 python3 scripts/validate_xcode_project.py
 xcodebuild -version
-swift test --package-path Packages/JyotishCore
 validation_dir="${JYOTISH_VALIDATION_DIR:-$PWD/.validation/ios}"
 mkdir -p "$validation_dir"
 # A new result path prevents an older successful run from being mistaken for this run.
 run_dir="$(mktemp -d "$validation_dir/run.XXXXXX")"
+set +e
+swift test --package-path Packages/JyotishCore 2>&1 | tee "$run_dir/swift-test.log"
+core_status=${PIPESTATUS[0]}
+set -e
+if [[ "$core_status" -ne 0 ]]; then
+  python3 scripts/report-ci-errors.py "$run_dir/swift-test.log" 'Swift core tests'
+  exit "$core_status"
+fi
 xcrun simctl list devices available --json > "$run_dir/devices.json"
 simulator_id="$(python3 - "$run_dir/devices.json" "${JYOTISH_SIMULATOR_UDID:-}" <<'PY'
 import json,re,sys
@@ -39,6 +46,7 @@ if ! xcrun simctl list devices booted --json | python3 -c 'import json,sys; d=js
   xcrun simctl boot "$simulator_id"
 fi
 xcrun simctl bootstatus "$simulator_id" -b
+set +e
 xcodebuild test \
   -project Jyotish.xcodeproj \
   -scheme Jyotish \
@@ -49,4 +57,10 @@ xcodebuild test \
   -parallel-testing-enabled NO \
   CODE_SIGNING_ALLOWED=NO \
   2>&1 | tee "$run_dir/xcodebuild.log"
+ios_status=${PIPESTATUS[0]}
+set -e
+if [[ "$ios_status" -ne 0 ]]; then
+  python3 scripts/report-ci-errors.py "$run_dir/xcodebuild.log" 'iOS build or simulator tests'
+  exit "$ios_status"
+fi
 printf 'Simulator tests completed. Results: %s\n' "$run_dir/Jyotish.xcresult"
