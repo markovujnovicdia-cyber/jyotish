@@ -85,7 +85,12 @@ final class PythonParityTests: XCTestCase {
         for p in expected.positions {
             let a = try XCTUnwrap(actual.positions[p.name], label + "/" + p.name)
             assertAngle(a.longitude, p.longitude, label + "/" + p.name)
-            XCTAssertEqual(a.speed, p.speed, accuracy: 1e-8, label + "/speed/" + p.name)
+            // The macOS runner differs from Linux-generated references by up
+            // to 2.21884e-8 deg/day in Swiss finite-difference speed corrections.
+            // This comparison budget is 0.00018 arcsec/day; positions retain
+            // 1e-7 degree and categorical/sign/retrograde checks stay exact.
+            // See docs/NUMERICAL_PARITY.md for the recorded CI measurements.
+            XCTAssertEqual(a.speed, p.speed, accuracy: 5e-8, label + "/speed/" + p.name)
             XCTAssertEqual(a.degree, p.degree, accuracy: 1e-7, label)
             XCTAssertEqual(a.signIndex, p.signIndex, label)
             XCTAssertEqual(a.isRetrograde, p.retrograde, label)
