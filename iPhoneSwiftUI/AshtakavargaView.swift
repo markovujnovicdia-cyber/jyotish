@@ -73,37 +73,7 @@ struct AshtakavargaView: View {
         card {
             Text("Bhinna i Sarva · sve vrijednosti").font(.headline)
             Text("Pomičite tablicu vodoravno za svih 12 znakova.").font(.caption).foregroundStyle(.secondary)
-            ScrollView(.horizontal, showsIndicators: true) {
-                Grid(alignment: .trailing, horizontalSpacing: 16, verticalSpacing: 12) {
-                    GridRow {
-                        Text("Planet / znak").font(.caption.bold())
-                        ForEach(0..<12, id: \.self) { sign in
-                            Text(Astro.signs[sign]).font(.caption.bold())
-                        }
-                        Text("Σ").font(.caption.bold())
-                    }
-                    ForEach(Ashtakavarga.planetOrder, id: \.self) { planet in
-                        if let row = result.bhinna[planet] {
-                            GridRow {
-                                Text(planet).font(.subheadline.weight(.medium))
-                                ForEach(0..<min(12, row.count), id: \.self) { sign in
-                                    Text("\(row[sign])").monospacedDigit()
-                                        .accessibilityLabel("\(planet), \(Astro.signs[sign]), \(row[sign]) bindua")
-                                }
-                                Text("\(row.reduce(0, +))").fontWeight(.semibold).monospacedDigit()
-                            }
-                        }
-                    }
-                    GridRow {
-                        Text("SAV").fontWeight(.bold())
-                        ForEach(0..<min(12, result.sarva.count), id: \.self) { sign in
-                            Text("\(result.sarva[sign])").fontWeight(.bold()).monospacedDigit()
-                                .accessibilityLabel("SAV, \(Astro.signs[sign]), \(result.sarva[sign]) bindua")
-                        }
-                        Text("\(result.total)").fontWeight(.bold()).monospacedDigit()
-                    }.foregroundStyle(.teal)
-                }.padding(.vertical, 8)
-            }
+            AshtakavargaMatrix(result: result)
         }
     }
 
@@ -112,5 +82,56 @@ struct AshtakavargaView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
             .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+    }
+}
+
+/// Separate concrete rows keep SwiftUI's generic expressions small enough for
+/// Xcode to type-check, while retaining all twelve columns and their sums.
+private struct AshtakavargaMatrix: View {
+    let result: AshtakavargaResult
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 12) {
+                AshtakavargaMatrixHeader()
+                ForEach(Ashtakavarga.planetOrder, id: \.self) { planet in
+                    if let row = result.bhinna[planet] {
+                        AshtakavargaMatrixRow(label: planet, values: row)
+                    }
+                }
+                AshtakavargaMatrixRow(label: "SAV", values: result.sarva, isTotal: true)
+            }.padding(.vertical, 8)
+        }
+    }
+}
+
+private struct AshtakavargaMatrixHeader: View {
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            Text("Planet / znak").frame(width: 88, alignment: .leading)
+            ForEach(0..<12, id: \.self) { sign in
+                Text(Astro.signs[sign]).frame(width: 72)
+            }
+            Text("Σ").frame(width: 44, alignment: .trailing)
+        }.font(.caption.bold())
+    }
+}
+
+private struct AshtakavargaMatrixRow: View {
+    let label: String
+    let values: [Int]
+    var isTotal = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(label).frame(width: 88, alignment: .leading)
+            ForEach(0..<min(12, values.count), id: \.self) { sign in
+                Text("\(values[sign])").frame(width: 72)
+                    .accessibilityLabel("\(label), \(Astro.signs[sign]), \(values[sign]) bindua")
+            }
+            Text("\(values.reduce(0, +))").frame(width: 44, alignment: .trailing)
+        }
+        .font(.subheadline.weight(isTotal ? .bold : .medium))
+        .foregroundStyle(isTotal ? Color.teal : Color.primary)
+        .monospacedDigit()
     }
 }
