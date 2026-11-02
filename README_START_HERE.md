@@ -14,8 +14,8 @@ simulator i instaliranje razvojne aplikacije.
    stvarnog trenutka; nepostojeće vrijeme se odbija.
 4. Za fizički iPhone u Signing & Capabilities postavite svoj Team i Bundle ID.
 
-**Stvarna Xcode kompilacija i simulator još nisu potvrđeni.** Razvojno okruženje
-je Linux, bez Apple SDK-a. Pripremljena je ponovljiva provjera na macOS-u:
+**Korisnik je potvrdio rad prethodne inačice u svojem okruženju.** Ovi novi
+dodaci još nisu potvrđeni u simulatoru. Razvojno okruženje je Linux, bez Apple SDK-a. Pripremljena je ponovljiva provjera na macOS-u:
 
 ```sh
 bash scripts/validate-ios.sh
@@ -23,7 +23,7 @@ bash scripts/validate-ios.sh
 
 Skripta gradi i testira aplikaciju u simulatoru te sprema zapis i novi `.xcresult`.
 Istu provjeru izvodi `.github/workflows/ios.yml` kada promjene stignu u GitHub
-repozitorij. Workflow još nije izvršen u ovom radu.
+repozitorij. Rezultati workflowa nisu potvrđeni u ovom radu.
 
 ## Implementirano u nativnom računanju i sučelju
 
@@ -35,13 +35,15 @@ repozitorij. Workflow još nije izvršen u ovom radu.
   svih pet komponenti Panchavargiya Bale.
 - Tajika aspekti, postojeće računske provjere 11 yoga za odabrani par i tri
   globalne provjere; svih 20 sahama i Mudda do sljedećeg solarnog povratka.
-- Svih 12 Masa Praveša i tranzitni položaji.
+- Svih 12 Masa Praveša te zajednički natalni/tranzitni dijagram s kućama od lagne i Mjeseca.
+- Ashtakavarga: svih sedam BAV tablica, SAV, graf po znakovima i ukupno 337 bindua.
+- Offline odabir mjesta rođenja iz 36.895 zapisa, s automatskim koordinatama i IANA zonom.
 - Lokalno spremanje, uređivanje i brisanje osoba; računanje u pozadini.
 
 Nativni prikazi sadrže podatke i izračune, bez astroloških interpretacija.
 `OriginalPython/` ostaje nepromijenjen referentni izvor, uključujući njegove
 stare analize i izvještaje. Ostali Python moduli (primjerice sinastrija,
-Ashtakavarga, Argala, Bhava Chalit, natalni yoga engine i PDF izvoz) nisu preneseni
+Argala, Bhava Chalit, natalni yoga engine i PDF izvoz) nisu preneseni
 u ovu nativnu inačicu; njihov izvor nije uklonjen ni zamijenjen.
 
 ## Testovi i provjerene razlike
@@ -53,7 +55,7 @@ python3 scripts/validate_xcode_project.py
 ```
 
 U ovom Linux okruženju stvarno je kompajlirana C/Swift računska jezgra i
-**38 XCTest testova prolazi u Debug i Release konfiguraciji**. Referentni slučajevi
+**51 XCTest test prolazi u Debug i Release konfiguraciji**. Referentni slučajevi
 pokrivaju četiri natalne, pet godišnjih i 60 mjesečnih karata te stotine Tajika
 provjera. Položaji se s istim Swiss datotekama uspoređuju unutar 1e-7 stupnja.
 Ispravljena je i pogreška simulatora: Swiss Ephemeris tiho odbacuje putanje
@@ -88,5 +90,7 @@ Swiss Ephemeris traži **AGPL ili Professional License** prije distribucije.
 Licencni izbor za cijelu aplikaciju nije donesen i profesionalni ugovor nije
 pribavljen. Projekt nije objavljen na App Storeu. Detalji, izvorni pravni tekstovi
 i porijeklo podataka su u [licencnoj bilješci](docs/SWISS_EPHEMERIS_LICENSE.md).
+
+[Odabir gradova, novi tranziti i Ashtakavarga](docs/CITIES_TRANSITS_ASHTAKAVARGA.md).
 
 [Dokaz i ograničenja Xcode provjera](docs/XCODE_VALIDATION.md).

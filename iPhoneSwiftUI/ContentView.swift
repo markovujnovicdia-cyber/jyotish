@@ -2,7 +2,7 @@ import SwiftUI
 import JyotishCore
 
 private enum Screen: String, CaseIterable, Identifiable {
-    case natal = "Karte", dasha = "Daše", annual = "Varshaphala", masa = "Masa Praveša", transit = "Tranziti"
+    case natal = "Karte", dasha = "Daše", annual = "Varshaphala", masa = "Masa Praveša", transit = "Tranziti", ashtakavarga = "Ashtakavarga"
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -11,6 +11,7 @@ private enum Screen: String, CaseIterable, Identifiable {
         case .annual: return "sun.max"
         case .masa: return "calendar"
         case .transit: return "globe.europe.africa"
+        case .ashtakavarga: return "chart.bar.xaxis"
         }
     }
     var kind: CalculationKind {
@@ -20,6 +21,7 @@ private enum Screen: String, CaseIterable, Identifiable {
         case .annual: return .annual
         case .masa: return .masa
         case .transit: return .transit
+        case .ashtakavarga: return .ashtakavarga
         }
     }
 }
@@ -144,9 +146,11 @@ struct ContentView: View {
                             .foregroundStyle(screen == item ? Color.white : Color.primary)
                     }
                     .accessibilityAddTraits(screen == item ? .isSelected : [])
+                    .accessibilityIdentifier("screen-\(item.kind.rawValue)")
                 }
             }.padding(.horizontal).padding(.vertical, 10)
         }
+        .accessibilityIdentifier("screen-picker")
     }
 
     private var personHeader: some View {
@@ -165,6 +169,9 @@ struct ContentView: View {
                     }
                     Text("\(BirthMoment.display(person.birthDate, zoneID: person.timeZone)) · \(person.timeZone)")
                         .font(.caption).foregroundStyle(.secondary)
+                    if let place = person.birthPlace, !place.isEmpty {
+                        Text(place).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             Spacer(minLength: 0)
@@ -234,20 +241,11 @@ struct ContentView: View {
             MasaView(months: output.months, zoneID: person.timeZone)
         case .transit:
             if let transit = output.transit {
-                DataCard {
-                    Text("Tranzitna karta").font(.headline)
-                    Text(BirthMoment.display(referenceDate, zoneID: person.timeZone, seconds: true)).font(.subheadline)
-                    Text("Mjesto izračuna: koordinate odabrane osobe.").font(.caption).foregroundStyle(.secondary)
-                }
-                ChartDataView(chart: transit)
-                DataCard {
-                    Text("Kuće prema natalnoj lagni").font(.headline)
-                    ForEach(Astro.planetOrder, id: \.self) { name in
-                        if let position = transit.positions[name] {
-                            LabeledContent(name, value: "\(Astro.house(sign: position.signIndex, ascendantSign: output.natal.ascendantSign))")
-                        }
-                    }
-                }
+                TransitComparisonView(natal: output.natal, transit: transit, date: referenceDate, zoneID: person.timeZone)
+            }
+        case .ashtakavarga:
+            if let result = output.ashtakavarga {
+                AshtakavargaView(result: result, ascendantSign: output.natal.ascendantSign)
             }
         }
     }
@@ -626,6 +624,8 @@ private struct PersonEditor: View {
     @State private var latitude: String
     @State private var longitude: String
     @State private var zone: String
+    @State private var birthPlace: String
+    @State private var showCityPicker = false
     @State private var repeatedChoice: Int?
     @State private var error: String?
 
@@ -637,6 +637,7 @@ private struct PersonEditor: View {
         _latitude = State(initialValue: person.map { String($0.latitude) } ?? "45.44")
         _longitude = State(initialValue: person.map { String($0.longitude) } ?? "16.28")
         _zone = State(initialValue: person?.timeZone ?? "Europe/Zagreb")
+        _birthPlace = State(initialValue: person?.birthPlace ?? "")
     }
 
     private var candidates: [Date] { (try? BirthMoment.candidates(wallClock: wallClock, zoneID: zone)) ?? [] }
@@ -649,6 +650,17 @@ private struct PersonEditor: View {
             Form {
                 SwiftUI.Section("Osoba") {
                     TextField("Ime", text: $name).textContentType(.name).accessibilityIdentifier("person-name")
+                }
+                SwiftUI.Section("Mjesto rođenja") {
+                    Button {
+                        showCityPicker = true
+                    } label: {
+                        Label("Pronađi grad", systemImage: "magnifyingglass")
+                    }.accessibilityIdentifier("birthplace-picker")
+                    TextField("Naziv mjesta (opcionalno)", text: $birthPlace)
+                        .accessibilityIdentifier("person-birthplace")
+                    Text("Odabir grada automatski popunjava koordinate i vremensku zonu. Pretraga radi bez interneta.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 SwiftUI.Section {
                     DatePicker("Datum i lokalno vrijeme rođenja", selection: $wallClock, in: BirthMoment.supportedDates, displayedComponents: [.date, .hourAndMinute])
@@ -706,6 +718,16 @@ private struct PersonEditor: View {
             }
             .onChange(of: wallClock) { _, _ in repeatedChoice = nil; error = nil }
             .onChange(of: zone) { _, _ in repeatedChoice = nil; error = nil }
+            .sheet(isPresented: $showCityPicker) {
+                CityPickerView { city in
+                    birthPlace = city.displayLabel
+                    latitude = String(city.latitude)
+                    longitude = String(city.longitude)
+                    zone = city.timeZone
+                    repeatedChoice = nil
+                    error = nil
+                }
+            }
         }
     }
     private func save() {
@@ -716,7 +738,8 @@ private struct PersonEditor: View {
             let possibilities = try BirthMoment.candidates(wallClock: wallClock, zoneID: zone)
             let index = possibilities.count > 1 ? (repeatedChoice ?? -1) : 0
             guard possibilities.indices.contains(index) else { throw InputError.message("Provjerite lokalno vrijeme rođenja.") }
-            let value = Person(id: person?.id ?? UUID(), name: name.trimmingCharacters(in: .whitespacesAndNewlines), birthDate: possibilities[index], latitude: lat, longitude: lon, timeZone: zone)
+            let place = birthPlace.trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = Person(id: person?.id ?? UUID(), name: name.trimmingCharacters(in: .whitespacesAndNewlines), birthDate: possibilities[index], latitude: lat, longitude: lon, timeZone: zone, birthPlace: place.isEmpty ? nil : place)
             try value.validate()
             try onSave(value)
             dismiss()
@@ -777,6 +800,7 @@ private struct LicenseView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Label("Jyotish", systemImage: "sparkles").font(.largeTitle.bold())
                     Text("Swiss Ephemeris \(Ephemeris.version)").font(.headline)
+                    Text(CityCatalog.licenseNotice).textSelection(.enabled)
                     Text(Ephemeris.licenseNotice).textSelection(.enabled)
                 }.frame(maxWidth: .infinity, alignment: .leading).padding()
             }

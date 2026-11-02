@@ -1,0 +1,29 @@
+{
+  "source": "GeoNames via geonamescache",
+  "package_version": "3.0.2",
+  "source_wheel_url": "https://files.pythonhosted.org/packages/48/c2/52f1b29de8839b4b55cd2641dfd722a6a94953d74fa82514e26084a92318/geonamescache-3.0.2-py3-none-any.whl",
+  "source_wheel_sha256": "b830e8942f2d58c7e68782dcf4dff2ffe8c4104a35ee881ed1ad4023cefcdba4",
+  "upstream_data_sha256": {
+    "cities15000.json": "24e87d89c775305650301618fa434d26e47e1b64ba5e27a5611e0f351908fd11",
+    "cities500.json": "1523be8c6f083eeee946e1c27a0916474d0f0de4361a15104fcc70218bc4d55e"
+  },
+  "catalog_sha256": "39d4ec25d2820e87604249bc135aeac16b507993e8763606527d7fc5a070c71d",
+  "world_cities": 34006,
+  "regional_additions": 2889,
+  "total_cities": 36895,
+  "country_codes": 244,
+  "regional_country_codes": [
+    "BA",
+    "HR",
+    "ME",
+    "MK",
+    "RS",
+    "SI",
+    "XK"
+  ],
+  "selection": "All world cities15000 plus cities500 for the listed regional countries; aliases retained and sorted.",
+  "modifications": "Filtered, deduplicated by GeoNames ID, renamed JSON fields and compacted; coordinates/timezones unmodified.",
+  "data_license": "Creative Commons Attribution 4.0 (GeoNames)",
+  "attribution_url": "https://www.geonames.org/",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/"
+}

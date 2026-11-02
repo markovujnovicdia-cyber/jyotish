@@ -5,6 +5,36 @@
 	};
 	objectVersion = 56;
 	objects = {
+		6FBA00191AAED6E9E03AECD3 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "AshtakavargaView.swift";
+			sourceTree = "<group>";
+		};
+		677F1A3A640BC12ABA44CA58 = {
+			isa = "PBXBuildFile";
+			fileRef = 6FBA00191AAED6E9E03AECD3;
+		};
+		587A40D53A8AF550885F948C = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "TransitComparisonView.swift";
+			sourceTree = "<group>";
+		};
+		7B2DB6A692BDA2489241D3F6 = {
+			isa = "PBXBuildFile";
+			fileRef = 587A40D53A8AF550885F948C;
+		};
+		E1C897A699EFD3A77D169AF8 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "CityPickerView.swift";
+			sourceTree = "<group>";
+		};
+		5BA28F62CF7475425F7F3A7C = {
+			isa = "PBXBuildFile";
+			fileRef = E1C897A699EFD3A77D169AF8;
+		};
 		4418EDA2C6D430064FA6F960 = {
 			isa = "PBXFileReference";
 			lastKnownFileType = "sourcecode.swift";
@@ -108,6 +138,9 @@
 			isa = "PBXSourcesBuildPhase";
 			buildActionMask = 2147483647;
 			files = (
+				677F1A3A640BC12ABA44CA58,
+				7B2DB6A692BDA2489241D3F6,
+				5BA28F62CF7475425F7F3A7C,
 				3378DDC8C4B7D133DC48490E,
 				9488963B31486D71F43514EB,
 				A3F24FF4A90AEEEC49E29007,
@@ -464,6 +497,9 @@
 		17C314E7AB04405FAAFF849F = {
 			isa = "PBXGroup";
 			children = (
+				6FBA00191AAED6E9E03AECD3,
+				587A40D53A8AF550885F948C,
+				E1C897A699EFD3A77D169AF8,
 				4418EDA2C6D430064FA6F960,
 				6CAEE48562FAF1D945B117C8,
 				F2CC60288139C99A7B8390B2,

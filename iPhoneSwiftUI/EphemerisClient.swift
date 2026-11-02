@@ -10,6 +10,7 @@ struct Person: Identifiable, Codable, Hashable, Sendable {
     var latitude: Double
     var longitude: Double
     var timeZone: String
+    var birthPlace: String? = nil
 
     func validate() throws {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -78,7 +79,7 @@ final class PersonStore: ObservableObject {
 }
 
 enum CalculationKind: String, Hashable, Sendable {
-    case natal, dasha, annual, masa, transit
+    case natal, dasha, annual, masa, transit, ashtakavarga
 }
 
 struct CalculationRequest: Hashable, Sendable {
@@ -96,6 +97,7 @@ struct CalculationOutput: Sendable {
     let mahaDashas: [DashaPeriod]
     let currentDashas: [DashaPeriod]
     let transit: Chart?
+    let ashtakavarga: AshtakavargaResult?
 }
 
 enum NativeCalculations {
@@ -111,6 +113,7 @@ enum NativeCalculations {
         var major: [DashaPeriod] = []
         var current: [DashaPeriod] = []
         var transit: Chart?
+        var ashtakavarga: AshtakavargaResult?
         switch request.kind {
         case .natal:
             special = try SpecialPoints.compute(chart: natal, localDate: BirthMoment.localDateString(person.birthDate, zoneID: person.timeZone), latitude: person.latitude, longitude: person.longitude)
@@ -130,9 +133,11 @@ enum NativeCalculations {
             }
         case .transit:
             transit = try Ephemeris.chart(date: request.referenceDate, latitude: person.latitude, longitude: person.longitude)
+        case .ashtakavarga:
+            ashtakavarga = try Ashtakavarga.calculate(chart: natal)
         }
         try Task.checkCancellation()
-        return CalculationOutput(natal: natal, specialPoints: special, annual: annual, months: months, mahaDashas: major, currentDashas: current, transit: transit)
+        return CalculationOutput(natal: natal, specialPoints: special, annual: annual, months: months, mahaDashas: major, currentDashas: current, transit: transit, ashtakavarga: ashtakavarga)
     }
 }
 

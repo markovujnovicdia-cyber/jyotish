@@ -9,7 +9,7 @@ let package = Package(
         .target(name: "CSwissEphemeris", exclude: ["LICENSE"], publicHeadersPath: "include",
                 linkerSettings: [.linkedLibrary("m")]),
         .target(name: "JyotishCore", dependencies: ["CSwissEphemeris"],
-                resources: [.copy("Resources/Ephemeris"), .copy("Resources/Licenses")]),
+                resources: [.copy("Resources/Ephemeris"), .copy("Resources/Licenses"), .copy("Resources/Cities")]),
         .testTarget(name: "JyotishCoreTests", dependencies: ["JyotishCore"],
                     resources: [.process("Fixtures")])
     ]

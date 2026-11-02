@@ -67,4 +67,52 @@ final class OfflineFlowTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [disabledSave], timeout: 5), .completed,
                        "Out-of-range latitude must disable saving")
     }
+
+    func testOfflineCityThenTransitComparisonAndAshtakavarga() throws {
+        let app = freshApp()
+        let add = app.buttons["add-person"].firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 10))
+        add.tap()
+        let name = app.textFields["person-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Offline city reference")
+        let cityPicker = app.buttons["birthplace-picker"]
+        XCTAssertTrue(cityPicker.waitForExistence(timeout: 5))
+        if !cityPicker.isHittable { app.swipeUp() }
+        cityPicker.tap()
+        let search = app.textFields["city-search"].firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        search.typeText("Petrinja")
+        let city = app.buttons["city-result-3193420"]
+        XCTAssertTrue(city.waitForExistence(timeout: 15))
+        city.tap()
+        let place = app.textFields["person-birthplace"]
+        XCTAssertTrue(place.waitForExistence(timeout: 5))
+        XCTAssertTrue((place.value as? String ?? "").contains("Petrinja"))
+        let save = app.buttons["save-person"]
+        XCTAssertTrue(save.isEnabled)
+        save.tap()
+        let natal = app.descendants(matching: .any).matching(identifier: "natal-results").firstMatch
+        XCTAssertTrue(natal.waitForExistence(timeout: 30))
+        revealScreen("transit", in: app)
+        let overlay = app.descendants(matching: .any).matching(identifier: "transit-overlay-chart").firstMatch
+        XCTAssertTrue(overlay.waitForExistence(timeout: 30))
+        revealScreen("ashtakavarga", in: app)
+        let total = app.descendants(matching: .any).matching(identifier: "ashtakavarga-total").firstMatch
+        XCTAssertTrue(total.waitForExistence(timeout: 30))
+        XCTAssertTrue(total.label.contains("337"))
+    }
+
+    private func revealScreen(_ kind: String, in app: XCUIApplication) {
+        let button = app.buttons["screen-\(kind)"]
+        for _ in 0..<6 {
+            if button.isHittable { button.tap(); return }
+            let tabs = app.scrollViews["screen-picker"].firstMatch
+            if tabs.exists { tabs.swipeLeft() } else { app.swipeLeft() }
+        }
+        XCTAssertTrue(button.isHittable, "Screen \(kind) is not reachable")
+        if button.isHittable { button.tap() }
+    }
 }

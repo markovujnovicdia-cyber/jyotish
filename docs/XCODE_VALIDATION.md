@@ -98,3 +98,20 @@ resource directories over400UTF-8bytes. Four resource-resolver tests cover
 short/long Unicode paths, cache deletion, stale-data replacement and clear
 configuration failures. Vendored Swiss sources, data and Python formulas are
 unchanged. Only the application adapter validates the library's path bound.
+
+## Offline cities, transit comparison and Ashtakavarga (2026-11-02)
+
+The latest Linux Debug and Release suites each executed **51 XCTest tests with
+zero failures**. This adds six real city/resource/search/timezone cases, four
+complete Ashtakavarga/Python cases and three transit/Python cases to the prior
+suite. The underlying fixtures cover 64 complete BAV/SAV cases, 43,008 Kakshya
+checks and 65 transit cases, beyond the original natal/annual/monthly fixtures.
+See [CITIES_TRANSITS_ASHTAKAVARGA.md](CITIES_TRANSITS_ASHTAKAVARGA.md) for coverage.
+
+The updated Xcode graph includes all eight app Swift files; static validation
+passes with 62 objects. New hosted tests cover old-record decoding, city
+persistence and native Ashtakavarga. A new UI scenario selects Petrinja, saves
+the person, then opens the transit overlay and confirms SAV 337. These Apple
+platform tests are prepared but have not executed in this Linux workspace.
+The user's confirmation that the previous version works is not a simulator
+validation of these new UI changes.

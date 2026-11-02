@@ -78,4 +78,32 @@ final class BirthInputTests: XCTestCase {
         try reloaded.delete(person.id)
         XCTAssertTrue(PersonStore(defaults: defaults).people.isEmpty)
     }
+
+    func testExistingPersonRecordsDecodeWithoutBirthPlace() throws {
+        let person = Person(name: "Legacy profile", birthDate: try wall(2000, 1, 1, 11, 0), latitude: 45.44, longitude: 16.28, timeZone: "Europe/Zagreb")
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(person)) as? [String: Any])
+        record.removeValue(forKey: "birthPlace")
+        let restored = try JSONDecoder().decode(Person.self, from: JSONSerialization.data(withJSONObject: record))
+        XCTAssertNil(restored.birthPlace)
+        XCTAssertEqual(restored.id, person.id)
+        XCTAssertEqual(restored.birthDate, person.birthDate)
+        try restored.validate()
+    }
+
+    @MainActor
+    func testSelectedOfflineCitySurvivesProfileReload() throws {
+        let city = try XCTUnwrap(CityCatalog.shared.search("Petrinja").first(where: { $0.id == 3193420 }))
+        let suite = "JyotishCityTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let person = Person(name: "City profile", birthDate: try wall(2000, 1, 1, 11, 0), latitude: city.latitude, longitude: city.longitude, timeZone: city.timeZone, birthPlace: city.displayLabel)
+        try PersonStore(defaults: defaults).save(person)
+        let restored = try XCTUnwrap(PersonStore(defaults: defaults).people.first)
+        XCTAssertEqual(restored.birthPlace, city.displayLabel)
+        XCTAssertEqual(restored.latitude, city.latitude)
+        XCTAssertEqual(restored.longitude, city.longitude)
+        XCTAssertEqual(restored.timeZone, "Europe/Zagreb")
+        let output = try NativeCalculations.calculate(CalculationRequest(person: restored, kind: .ashtakavarga, year: 2026, referenceDate: Date()))
+        XCTAssertEqual(output.ashtakavarga?.total, 337)
+    }
 }
