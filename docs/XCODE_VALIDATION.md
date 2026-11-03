@@ -126,8 +126,9 @@ are approximately 14.5 points (natal/vargas/annual/monthly) and 13.5 points
 use at least 12 points with stronger contrast. Crowded labels may shrink only
 to 85% of their base size, versus the original 60–65%. Abbreviations and
 retrograde markers remain unchanged; complete position tables remain below.
-No enlargement button or separate zoom view is used. Ashtakavarga values and
-the position tables retain their larger text.
+No enlargement button or separate zoom view is used. Ashtakavarga fonts and
+column widths are restored to their original sizes; the other position tables
+retain their larger text.
 
 Linux verification: all 51 core XCTest cases passed, all app/test Swift files
 passed frontend syntax parsing, and the static Xcode project check passed.

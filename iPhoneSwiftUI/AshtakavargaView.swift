@@ -49,18 +49,18 @@ struct AshtakavargaView: View {
                 Text(selected == "SAV" ? "Bindui po znaku" : "\(selected) · bindui po znaku")
                     .font(.headline)
                 Spacer()
-                Text("Σ \(total)").font(.body).monospacedDigit()
+                Text("Σ \(total)").font(.subheadline).monospacedDigit()
             }
             ForEach(0..<min(12, values.count), id: \.self) { sign in
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(Astro.signs[sign]).font(.body)
+                        Text(Astro.signs[sign]).font(.subheadline)
                         Text("Kuća \(Astro.house(sign: sign, ascendantSign: ascendantSign))")
-                            .font(.subheadline).foregroundStyle(.secondary)
-                    }.frame(width: 100, alignment: .leading)
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }.frame(width: 90, alignment: .leading)
                     ProgressView(value: Double(values[sign]), total: scale)
                         .tint(.teal).accessibilityHidden(true)
-                    Text("\(values[sign])").font(.body.weight(.semibold))
+                    Text("\(values[sign])").font(.subheadline.weight(.semibold))
                         .monospacedDigit().frame(width: 28, alignment: .trailing)
                 }
                 .accessibilityElement(children: .combine)
@@ -107,12 +107,12 @@ private struct AshtakavargaMatrix: View {
 private struct AshtakavargaMatrixHeader: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 12) {
-            Text("Planet / znak").frame(width: 96, alignment: .leading)
+            Text("Planet / znak").frame(width: 88, alignment: .leading)
             ForEach(0..<12, id: \.self) { sign in
-                Text(Astro.signs[sign]).frame(width: 88)
+                Text(Astro.signs[sign]).frame(width: 72)
             }
-            Text("Σ").frame(width: 52, alignment: .trailing)
-        }.font(.subheadline.bold())
+            Text("Σ").frame(width: 44, alignment: .trailing)
+        }.font(.caption.bold())
     }
 }
 
@@ -123,14 +123,14 @@ private struct AshtakavargaMatrixRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(label).frame(width: 96, alignment: .leading)
+            Text(label).frame(width: 88, alignment: .leading)
             ForEach(0..<min(12, values.count), id: \.self) { sign in
-                Text("\(values[sign])").frame(width: 88)
+                Text("\(values[sign])").frame(width: 72)
                     .accessibilityLabel("\(label), \(Astro.signs[sign]), \(values[sign]) bindua")
             }
-            Text("\(values.reduce(0, +))").frame(width: 52, alignment: .trailing)
+            Text("\(values.reduce(0, +))").frame(width: 44, alignment: .trailing)
         }
-        .font(.body.weight(isTotal ? .bold : .medium))
+        .font(.subheadline.weight(isTotal ? .bold : .medium))
         .foregroundStyle(isTotal ? Color.teal : Color.primary)
         .monospacedDigit()
     }
