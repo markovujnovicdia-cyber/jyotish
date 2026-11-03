@@ -118,12 +118,16 @@ validation of these new UI changes.
 
 ## Chart readability (2026-11-03)
 
-Natal, divisional, annual, monthly and transit charts now use 17-point bold
-planet labels and 14-point semibold sign numbers, scaled with Dynamic Type.
-The shared layout measures each house's wrapped text and increases the chart
-height when needed, rather than shrinking or truncating planet labels. All
-planets remain in the chart; no enlargement button or separate zoom view is used.
-Ashtakavarga values and the position tables also use larger text.
+Natal, divisional, annual, monthly and transit charts retain the original square
+1:1 outline, diagonals and house centers. The automatic height expansion was
+removed following user review. At a 329-point chart width, bold planet labels
+are approximately 14.5 points (natal/vargas/annual/monthly) and 13.5 points
+(transits), versus approximately 11.5 and 9.5 points originally. Sign numbers
+use at least 12 points with stronger contrast. Crowded labels may shrink only
+to 85% of their base size, versus the original 60–65%. Abbreviations and
+retrograde markers remain unchanged; complete position tables remain below.
+No enlargement button or separate zoom view is used. Ashtakavarga values and
+the position tables retain their larger text.
 
 Linux verification: all 51 core XCTest cases passed, all app/test Swift files
 passed frontend syntax parsing, and the static Xcode project check passed.

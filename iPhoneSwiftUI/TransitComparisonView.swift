@@ -129,6 +129,12 @@ private struct TransitOverlayChart: View {
     let rows: [TransitRow]
     let referenceSign: Int
     let reference: TransitReference
+    private let centers: [CGPoint] = [
+        CGPoint(x: 0.50, y: 0.25), CGPoint(x: 0.25, y: 0.085), CGPoint(x: 0.085, y: 0.25),
+        CGPoint(x: 0.25, y: 0.50), CGPoint(x: 0.085, y: 0.75), CGPoint(x: 0.25, y: 0.915),
+        CGPoint(x: 0.50, y: 0.75), CGPoint(x: 0.75, y: 0.915), CGPoint(x: 0.915, y: 0.75),
+        CGPoint(x: 0.75, y: 0.50), CGPoint(x: 0.915, y: 0.25), CGPoint(x: 0.75, y: 0.085)
+    ]
     private let shortNames = ["Sunce": "Su", "Mjesec": "Mo", "Mars": "Ma", "Merkur": "Me", "Jupiter": "Ju", "Venera": "Ve", "Saturn": "Sa", "Rahu": "Ra", "Ketu": "Ke"]
     private func natalLabels(house: Int) -> String {
         Astro.planetOrder.compactMap { name -> String? in
@@ -142,16 +148,20 @@ private struct TransitOverlayChart: View {
             .joined(separator: " ")
     }
     var body: some View {
-        NorthIndianChartLayout {
-            ForEach(0..<12, id: \.self) { index in
-                TransitHouseCell(sign: (referenceSign + index) % 12 + 1,
-                                 natalLabels: natalLabels(house: index + 1),
-                                 transitLabels: transitLabels(house: index + 1))
-                    .padding(.vertical, 2)
-                    .frame(maxWidth: .infinity)
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            ZStack {
+                NorthIndianChartFrame().stroke(Color.teal.opacity(0.6), lineWidth: 1)
+                ForEach(0..<12, id: \.self) { index in
+                    TransitHouseCell(sign: (referenceSign + index) % 12 + 1,
+                                     natalLabels: natalLabels(house: index + 1),
+                                     transitLabels: transitLabels(house: index + 1), side: side)
+                        .frame(width: side * 0.21, height: side * 0.18)
+                        .position(x: side * centers[index].x, y: side * centers[index].y)
+                }
             }
         }
-        .background { NorthIndianChartFrame().stroke(Color.teal.opacity(0.6), lineWidth: 1) }
+        .aspectRatio(1, contentMode: .fit)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Usporedna sjevernoindijska karta. \(reference.rawValue), prvi znak \(Astro.signs[referenceSign]). N označava natalne, T tranzitne položaje. Svi položaji i kuće dostupni su u tablici ispod.")
     }
@@ -161,22 +171,22 @@ private struct TransitHouseCell: View {
     let sign: Int
     let natalLabels: String
     let transitLabels: String
-    @ScaledMetric(relativeTo: .body) private var planetFont: CGFloat = 17
-    @ScaledMetric(relativeTo: .subheadline) private var signFont: CGFloat = 14
+    let side: CGFloat
     var body: some View {
         VStack(spacing: 2) {
             Text("\(sign)")
-                .font(.system(size: signFont, weight: .semibold))
+                .font(.system(size: max(12, side * 0.036), weight: .semibold))
             if !natalLabels.isEmpty {
                 Text("N \(natalLabels)").foregroundStyle(.teal)
-                    .font(.system(size: planetFont, weight: .bold))
+                    .font(.system(size: max(13, side * 0.041), weight: .bold))
             }
             if !transitLabels.isEmpty {
                 Text("T \(transitLabels)").foregroundStyle(.orange)
-                    .font(.system(size: planetFont, weight: .bold))
+                    .font(.system(size: max(13, side * 0.041), weight: .bold))
             }
         }
         .multilineTextAlignment(.center)
-        .fixedSize(horizontal: false, vertical: true)
+        .lineLimit(3)
+        .minimumScaleFactor(0.85)
     }
 }

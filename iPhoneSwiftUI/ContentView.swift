@@ -344,51 +344,6 @@ private struct ChartDataView: View {
     }
 }
 
-/// Measure the actual labels and grow the chart vertically when a house needs
-/// more room. Text keeps its readable size, including with Dynamic Type.
-/// The fractions reserve a rectangle wholly inside each triangular/diamond house.
-struct NorthIndianChartLayout: Layout {
-    private let centers: [CGPoint] = [
-        CGPoint(x: 0.50, y: 0.25), CGPoint(x: 0.25, y: 0.075), CGPoint(x: 0.085, y: 0.25),
-        CGPoint(x: 0.25, y: 0.50), CGPoint(x: 0.085, y: 0.75), CGPoint(x: 0.25, y: 0.925),
-        CGPoint(x: 0.50, y: 0.75), CGPoint(x: 0.75, y: 0.925), CGPoint(x: 0.915, y: 0.75),
-        CGPoint(x: 0.75, y: 0.50), CGPoint(x: 0.915, y: 0.25), CGPoint(x: 0.75, y: 0.075)
-    ]
-
-    private func fractions(for index: Int) -> (width: CGFloat, height: CGFloat) {
-        switch index {
-        case 1, 5, 7, 11: return (0.20, 0.14)
-        case 2, 4, 8, 10: return (0.16, 0.16)
-        default: return (0.28, 0.20)
-        }
-    }
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        if proposal.width == 0 { return .zero }
-        let proposedWidth = proposal.width ?? 320
-        let width = proposedWidth.isFinite && proposedWidth > 0 ? proposedWidth : 320
-        var height = width
-        for (index, subview) in subviews.enumerated() {
-            let cell = fractions(for: index)
-            let labelSize = subview.sizeThatFits(ProposedViewSize(width: width * cell.width, height: nil))
-            height = max(height, (labelSize.height + 4) / cell.height)
-        }
-        return CGSize(width: width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        for (index, subview) in subviews.enumerated() {
-            guard centers.indices.contains(index) else { continue }
-            subview.place(
-                at: CGPoint(x: bounds.minX + bounds.width * centers[index].x,
-                            y: bounds.minY + bounds.height * centers[index].y),
-                anchor: .center,
-                proposal: ProposedViewSize(width: bounds.width * fractions(for: index).width, height: nil)
-            )
-        }
-    }
-}
-
 struct NorthIndianChartFrame: Shape {
     func path(in rect: CGRect) -> Path {
         let left = rect.minX, right = rect.maxX, top = rect.minY, bottom = rect.maxY
@@ -409,8 +364,12 @@ private struct NorthIndianChart: View {
     let chart: Chart
     let varga: Varga
     let ascendantSign: Int
-    @ScaledMetric(relativeTo: .body) private var planetFont: CGFloat = 17
-    @ScaledMetric(relativeTo: .subheadline) private var signFont: CGFloat = 14
+    private let centers: [CGPoint] = [
+        CGPoint(x: 0.50, y: 0.25), CGPoint(x: 0.25, y: 0.085), CGPoint(x: 0.085, y: 0.25),
+        CGPoint(x: 0.25, y: 0.50), CGPoint(x: 0.085, y: 0.75), CGPoint(x: 0.25, y: 0.915),
+        CGPoint(x: 0.50, y: 0.75), CGPoint(x: 0.75, y: 0.915), CGPoint(x: 0.915, y: 0.75),
+        CGPoint(x: 0.75, y: 0.50), CGPoint(x: 0.915, y: 0.25), CGPoint(x: 0.75, y: 0.085)
+    ]
     private let shortNames = ["Sunce": "Su", "Mjesec": "Mo", "Mars": "Ma", "Merkur": "Me", "Jupiter": "Ju", "Venera": "Ve", "Saturn": "Sa", "Rahu": "Ra", "Ketu": "Ke"]
     private func names(in house: Int) -> String {
         Astro.planetOrder.compactMap { name -> String? in
@@ -419,23 +378,26 @@ private struct NorthIndianChart: View {
         }.joined(separator: " ")
     }
     var body: some View {
-        NorthIndianChartLayout {
-            ForEach(0..<12, id: \.self) { index in
-                VStack(spacing: 2) {
-                    Text("\((ascendantSign + index) % 12 + 1)")
-                        .font(.system(size: signFont, weight: .semibold))
-                    if !names(in: index + 1).isEmpty {
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            ZStack {
+                NorthIndianChartFrame().stroke(Color.teal.opacity(0.65), lineWidth: 1)
+                ForEach(0..<12, id: \.self) { index in
+                    VStack(spacing: 2) {
+                        Text("\((ascendantSign + index) % 12 + 1)")
+                            .font(.system(size: max(12, side * 0.036), weight: .semibold))
                         Text(names(in: index + 1))
-                            .font(.system(size: planetFont, weight: .bold))
+                            .font(.system(size: max(14, side * 0.044), weight: .bold))
                             .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .minimumScaleFactor(0.85)
+                            .lineLimit(3)
                     }
+                    .frame(width: side * 0.20, height: side * 0.16)
+                    .position(x: side * centers[index].x, y: side * centers[index].y)
                 }
-                .padding(.vertical, 2)
-                .frame(maxWidth: .infinity)
             }
         }
-        .background { NorthIndianChartFrame().stroke(Color.teal.opacity(0.65), lineWidth: 1) }
+        .aspectRatio(1, contentMode: .fit)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Sjevernoindijska \(varga.label) karta. Lagna \(Astro.signs[ascendantSign]). Položaji su navedeni u tablici ispod.")
     }
