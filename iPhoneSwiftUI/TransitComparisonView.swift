@@ -40,8 +40,8 @@ public struct TransitComparisonView: View {
         TransitCard {
             Text("Natalna i tranzitna karta").font(.headline)
             Text(BirthMoment.display(date, zoneID: zoneID, seconds: true))
-                .font(.subheadline).monospacedDigit()
-            Text(zoneID).font(.caption).foregroundStyle(.secondary)
+                .font(.body).monospacedDigit()
+            Text(zoneID).font(.subheadline).foregroundStyle(.secondary)
             Picker("Kuće promatrane od", selection: $reference) {
                 ForEach(TransitReference.allCases) { option in Text(option.rawValue).tag(option) }
             }
@@ -51,11 +51,11 @@ public struct TransitComparisonView: View {
                 Label("N · natalno", systemImage: "circle.fill").foregroundStyle(.teal)
                 Label("T · tranzitno", systemImage: "diamond.fill").foregroundStyle(.orange)
             }
-            .font(.caption.weight(.semibold))
+            .font(.subheadline.weight(.semibold))
             TransitOverlayChart(natal: natal, rows: rows, referenceSign: referenceSign(), reference: reference)
                 .accessibilityIdentifier("transit-overlay-chart")
             Text("Prva kuća: \(Astro.signs[referenceSign()]). Oba sloja prikazuju položaje u istom zodijaku.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.subheadline).foregroundStyle(.secondary)
         }
         TransitCard {
             Text("Položaji i kuće").font(.headline)
@@ -103,14 +103,14 @@ private struct TransitPositionRow: View {
                 }
             }
             LabeledContent("N · natalno", value: position(natalPosition))
-                .font(.subheadline).foregroundStyle(.teal)
+                .font(.body).foregroundStyle(.teal)
             LabeledContent("T · tranzitno", value: String(format: "%@ · %.4f°", row.sign, row.degreeInSign))
-                .font(.subheadline).foregroundStyle(.orange)
+                .font(.body).foregroundStyle(.orange)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 16) { houseLabels }
                 VStack(alignment: .leading, spacing: 4) { houseLabels }
             }
-            .font(.caption).foregroundStyle(.secondary)
+            .font(.subheadline).foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
@@ -129,12 +129,6 @@ private struct TransitOverlayChart: View {
     let rows: [TransitRow]
     let referenceSign: Int
     let reference: TransitReference
-    private let centers: [CGPoint] = [
-        CGPoint(x: 0.50, y: 0.25), CGPoint(x: 0.25, y: 0.085), CGPoint(x: 0.085, y: 0.25),
-        CGPoint(x: 0.25, y: 0.50), CGPoint(x: 0.085, y: 0.75), CGPoint(x: 0.25, y: 0.915),
-        CGPoint(x: 0.50, y: 0.75), CGPoint(x: 0.75, y: 0.915), CGPoint(x: 0.915, y: 0.75),
-        CGPoint(x: 0.75, y: 0.50), CGPoint(x: 0.915, y: 0.25), CGPoint(x: 0.75, y: 0.085)
-    ]
     private let shortNames = ["Sunce": "Su", "Mjesec": "Mo", "Mars": "Ma", "Merkur": "Me", "Jupiter": "Ju", "Venera": "Ve", "Saturn": "Sa", "Rahu": "Ra", "Ketu": "Ke"]
     private func natalLabels(house: Int) -> String {
         Astro.planetOrder.compactMap { name -> String? in
@@ -148,20 +142,16 @@ private struct TransitOverlayChart: View {
             .joined(separator: " ")
     }
     var body: some View {
-        GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
-            ZStack {
-                TransitFrame().stroke(Color.teal.opacity(0.6), lineWidth: 1)
-                ForEach(0..<12, id: \.self) { index in
-                    TransitHouseCell(sign: (referenceSign + index) % 12 + 1,
-                                     natalLabels: natalLabels(house: index + 1),
-                                     transitLabels: transitLabels(house: index + 1), side: side)
-                        .frame(width: side * 0.205, height: side * 0.18)
-                        .position(x: side * centers[index].x, y: side * centers[index].y)
-                }
+        NorthIndianChartLayout {
+            ForEach(0..<12, id: \.self) { index in
+                TransitHouseCell(sign: (referenceSign + index) % 12 + 1,
+                                 natalLabels: natalLabels(house: index + 1),
+                                 transitLabels: transitLabels(house: index + 1))
+                    .padding(.vertical, 2)
+                    .frame(maxWidth: .infinity)
             }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .background { NorthIndianChartFrame().stroke(Color.teal.opacity(0.6), lineWidth: 1) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Usporedna sjevernoindijska karta. \(reference.rawValue), prvi znak \(Astro.signs[referenceSign]). N označava natalne, T tranzitne položaje. Svi položaji i kuće dostupni su u tablici ispod.")
     }
@@ -171,33 +161,22 @@ private struct TransitHouseCell: View {
     let sign: Int
     let natalLabels: String
     let transitLabels: String
-    let side: CGFloat
+    @ScaledMetric(relativeTo: .body) private var planetFont: CGFloat = 17
+    @ScaledMetric(relativeTo: .subheadline) private var signFont: CGFloat = 14
     var body: some View {
         VStack(spacing: 2) {
-            Text("\(sign)").foregroundStyle(.secondary)
+            Text("\(sign)")
+                .font(.system(size: signFont, weight: .semibold))
             if !natalLabels.isEmpty {
                 Text("N \(natalLabels)").foregroundStyle(.teal)
+                    .font(.system(size: planetFont, weight: .bold))
             }
             if !transitLabels.isEmpty {
                 Text("T \(transitLabels)").foregroundStyle(.orange)
+                    .font(.system(size: planetFont, weight: .bold))
             }
         }
-        .font(.system(size: max(9, side * 0.029), weight: .semibold))
-        .multilineTextAlignment(.center).lineLimit(3).minimumScaleFactor(0.65)
-    }
-}
-
-private struct TransitFrame: Shape {
-    func path(in rect: CGRect) -> Path {
-        let side = min(rect.width, rect.height)
-        return Path { path in
-            path.addRect(CGRect(x: 1, y: 1, width: side - 2, height: side - 2))
-            path.move(to: .zero); path.addLine(to: CGPoint(x: side, y: side))
-            path.move(to: CGPoint(x: side, y: 0)); path.addLine(to: CGPoint(x: 0, y: side))
-            path.move(to: CGPoint(x: side / 2, y: 0))
-            for point in [CGPoint(x: side, y: side / 2), CGPoint(x: side / 2, y: side), CGPoint(x: 0, y: side / 2), CGPoint(x: side / 2, y: 0)] {
-                path.addLine(to: point)
-            }
-        }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

@@ -115,3 +115,17 @@ the person, then opens the transit overlay and confirms SAV 337. These Apple
 platform tests are prepared but have not executed in this Linux workspace.
 The user's confirmation that the previous version works is not a simulator
 validation of these new UI changes.
+
+## Chart readability (2026-11-03)
+
+Natal, divisional, annual, monthly and transit charts now use 17-point bold
+planet labels and 14-point semibold sign numbers, scaled with Dynamic Type.
+The shared layout measures each house's wrapped text and increases the chart
+height when needed, rather than shrinking or truncating planet labels. All
+planets remain in the chart; no enlargement button or separate zoom view is used.
+Ashtakavarga values and the position tables also use larger text.
+
+Linux verification: all 51 core XCTest cases passed, all app/test Swift files
+passed frontend syntax parsing, and the static Xcode project check passed.
+These checks do not verify SwiftUI typechecking or the rendered iPhone layout;
+those require the macOS build and simulator workflow.
