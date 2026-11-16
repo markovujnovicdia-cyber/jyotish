@@ -66,11 +66,46 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        navigation
+            .tint(.teal)
+    }
+
+    @ViewBuilder private var navigation: some View {
+        #if targetEnvironment(macCatalyst)
+        NavigationSplitView {
+            List(selection: Binding<Screen?>(
+                get: { screen },
+                set: { if let selection = $0 { screen = selection } }
+            )) {
+                SwiftUI.Section("Izračuni") {
+                    ForEach(Screen.allCases) { item in
+                        Label(item.rawValue, systemImage: item.symbol)
+                            .tag(item)
+                            .accessibilityIdentifier("screen-\(item.kind.rawValue)")
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationTitle("Jyotish")
+            .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 300)
+        } detail: {
+            NavigationStack { workspace }
+        }
+        .navigationSplitViewStyle(.balanced)
+        .frame(minWidth: 900, minHeight: 620)
+        #else
+        NavigationStack { workspace }
+        #endif
+    }
+
+    private var workspace: some View {
+        GeometryReader { window in
             VStack(spacing: 0) {
+                #if !targetEnvironment(macCatalyst)
                 screenPicker
+                #endif
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 12) {
                         personHeader
                         if let message = store.storageError { ErrorCard(message: message) }
                         if let person {
@@ -85,7 +120,7 @@ struct ContentView: View {
                                 results(output, person: person)
                             }
                         } else {
-                            ContentUnavailableView("Vaša prva karta", systemImage: "sparkles", description: Text("Dodajte podatke rođenja. Svi izračuni i spremljene osobe ostaju na iPhoneu."))
+                            ContentUnavailableView("Vaša prva karta", systemImage: "sparkles", description: Text("Dodajte podatke rođenja. Svi izračuni i spremljene osobe ostaju na ovom uređaju."))
                             Button("Dodaj osobu", systemImage: "plus") { showAdd = true }
                                 .buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
                         }
@@ -95,43 +130,49 @@ struct ContentView: View {
                             .font(.caption).foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    .padding()
+                    .padding(window.size.width >= 820 ? 20 : 16)
+                    .frame(maxWidth: 1180)
+                    .frame(maxWidth: .infinity)
+                    .environment(\.monitorLayout, window.size.width >= 820)
                 }
                 .background(Color(uiColor: .systemGroupedBackground))
             }
-            .navigationTitle("Jyotish")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Osobe", systemImage: "person.2") { showPeople = true }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Dodaj osobu", systemImage: "plus") { showAdd = true }
-                        .accessibilityIdentifier("add-person")
-                }
+        }
+        .navigationTitle("Jyotish")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Osobe", systemImage: "person.2") { showPeople = true }
             }
-            .sheet(isPresented: $showAdd) {
-                PersonEditor { saved in try store.save(saved); selectedID = saved.id }
-            }
-            .sheet(item: $editing) { person in
-                PersonEditor(person: person) { saved in try store.save(saved); selectedID = saved.id }
-            }
-            .sheet(isPresented: $showPeople) {
-                PeopleView(store: store, selectedID: $selectedID)
-            }
-            .sheet(isPresented: $showLicenses) { LicenseView() }
-            .task(id: request) {
-                if let request { await calculations.calculate(request) }
-            }
-            .task(id: person) {
-                if let person { await selectCurrentAnnualYear(for: person) }
-            }
-            .onChange(of: person, initial: true) { _, _ in
-                year = min(2398, max(birthYear, year))
-                if let person, referenceDate < person.birthDate { referenceDate = person.birthDate }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Dodaj osobu", systemImage: "plus") { showAdd = true }
+                    .accessibilityIdentifier("add-person")
+                    .keyboardShortcut("n", modifiers: .command)
             }
         }
-        .tint(.teal)
+        .sheet(isPresented: $showAdd) {
+            PersonEditor { saved in try store.save(saved); selectedID = saved.id }
+                .desktopSheetSize()
+        }
+        .sheet(item: $editing) { person in
+            PersonEditor(person: person) { saved in try store.save(saved); selectedID = saved.id }
+                .desktopSheetSize()
+        }
+        .sheet(isPresented: $showPeople) {
+            PeopleView(store: store, selectedID: $selectedID)
+                .desktopSheetSize()
+        }
+        .sheet(isPresented: $showLicenses) { LicenseView().desktopSheetSize() }
+        .task(id: request) {
+            if let request { await calculations.calculate(request) }
+        }
+        .task(id: person) {
+            if let person { await selectCurrentAnnualYear(for: person) }
+        }
+        .onChange(of: person, initial: true) { _, _ in
+            year = min(2398, max(birthYear, year))
+            if let person, referenceDate < person.birthDate { referenceDate = person.birthDate }
+        }
     }
 
     private var screenPicker: some View {
@@ -298,6 +339,7 @@ private struct NatalView: View {
 }
 
 private struct ChartDataView: View {
+    @Environment(\.monitorLayout) private var wide
     let chart: Chart
     var varga: Varga = .d1
     private var ascendantSign: Int? { try? varga.signIndex(longitude: chart.ascendantLongitude) }
@@ -305,43 +347,94 @@ private struct ChartDataView: View {
         DataCard {
             Text(varga.label).font(.headline)
             if let ascendantSign {
-                NorthIndianChart(chart: chart, varga: varga, ascendantSign: ascendantSign)
-                LabeledContent("Lagna", value: Astro.signs[ascendantSign])
-                if varga == .d1 {
-                    Text("\(AstroMath.position(chart.ascendantLongitude)) · JD \(chart.julianDay, specifier: "%.7f")")
-                        .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
-                }
-                Divider()
-                ForEach(Astro.planetOrder, id: \.self) { name in
-                    if let position = chart.positions[name], let sign = try? varga.signIndex(longitude: position.longitude) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(name).fontWeight(.semibold)
-                                if position.isRetrograde { Text("R").font(.caption.bold()).accessibilityLabel("Retrogradno") }
-                                Spacer()
-                                Text(Astro.signs[sign])
-                            }
-                            if varga == .d1 {
-                                Text("\(position.degree, specifier: "%.5f")° · kuća \(Astro.house(sign: sign, ascendantSign: ascendantSign))")
-                                    .font(.body).monospacedDigit()
-                                if let nak = try? Nakshatra.at(longitude: position.longitude) {
-                                    Text("\(nak.name) · pada \(nak.pada) · \(nak.lord)")
-                                        .font(.subheadline).foregroundStyle(.secondary)
-                                }
-                            } else {
-                                Text("Kuća \(Astro.house(sign: sign, ascendantSign: ascendantSign)) · natalna dužina \(position.longitude, specifier: "%.5f")°")
-                                    .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
-                            }
+                MonitorColumns {
+                    NorthIndianChart(chart: chart, varga: varga, ascendantSign: ascendantSign)
+                        .frame(maxWidth: 420)
+                        .frame(maxWidth: .infinity)
+                } right: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if wide {
+                            planetTable(ascendantSign: ascendantSign)
+                        } else {
+                            planetDetails(ascendantSign: ascendantSign)
                         }
-                        .accessibilityElement(children: .combine)
-                        Divider()
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
                 Text("Divizijsku kartu nije moguće izračunati.").foregroundStyle(.red)
             }
         }
     }
+
+    private func planetTable(ascendantSign: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LabeledContent("Lagna", value: Astro.signs[ascendantSign])
+            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 5) {
+                GridRow {
+                    Text("Planet")
+                    Text("Znak")
+                    Text("Stupanj")
+                    Text("Kuća")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                Divider().gridCellColumns(4)
+                ForEach(Astro.planetOrder, id: \.self) { name in
+                    if let position = chart.positions[name], let sign = try? varga.signIndex(longitude: position.longitude) {
+                        GridRow {
+                            Text(name + (position.isRetrograde ? " ᴿ" : "")).fontWeight(.medium)
+                            Text(Astro.signs[sign])
+                            Text("\(position.degree, specifier: "%.2f")°").monospacedDigit()
+                            Text("\(Astro.house(sign: sign, ascendantSign: ascendantSign))").monospacedDigit()
+                        }
+                        if varga == .d1, let nak = try? Nakshatra.at(longitude: position.longitude) {
+                            Text("\(nak.name) · pada \(nak.pada) · \(nak.lord)")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .gridCellColumns(4)
+                        }
+                    }
+                }
+            }
+            .font(.subheadline)
+            .textSelection(.enabled)
+        }
+    }
+
+    @ViewBuilder private func planetDetails(ascendantSign: Int) -> some View {
+        LabeledContent("Lagna", value: Astro.signs[ascendantSign])
+        if varga == .d1 {
+            Text("\(AstroMath.position(chart.ascendantLongitude)) · JD \(chart.julianDay, specifier: "%.7f")")
+                .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+        }
+        Divider()
+        ForEach(Astro.planetOrder, id: \.self) { name in
+            if let position = chart.positions[name], let sign = try? varga.signIndex(longitude: position.longitude) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(name).fontWeight(.semibold)
+                        if position.isRetrograde { Text("R").font(.caption.bold()).accessibilityLabel("Retrogradno") }
+                        Spacer()
+                        Text(Astro.signs[sign])
+                    }
+                    if varga == .d1 {
+                        Text("\(position.degree, specifier: "%.5f")° · kuća \(Astro.house(sign: sign, ascendantSign: ascendantSign))")
+                            .font(.body).monospacedDigit()
+                        if let nak = try? Nakshatra.at(longitude: position.longitude) {
+                            Text("\(nak.name) · pada \(nak.pada) · \(nak.lord)")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text("Kuća \(Astro.house(sign: sign, ascendantSign: ascendantSign)) · natalna dužina \(position.longitude, specifier: "%.5f")°")
+                            .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                Divider()
+            }
+        }
+    }
+
 }
 
 struct NorthIndianChartFrame: Shape {
@@ -483,14 +576,21 @@ private struct AnnualView: View {
     let zoneID: String
     @State private var karyeshaHouse = 7
     var body: some View {
-        summaryCard
         ChartDataView(chart: annual.chart)
-        specialCard
-        lordCard
-        aspectsCard
-        yogasCard
-        sahamsCard
-        muddaCard
+        MonitorColumns {
+            VStack(alignment: .leading, spacing: 16) {
+                summaryCard
+                specialCard
+                aspectsCard
+                sahamsCard
+            }
+        } right: {
+            VStack(alignment: .leading, spacing: 16) {
+                lordCard
+                yogasCard
+                muddaCard
+            }
+        }
     }
 
     private var summaryCard: some View {
@@ -737,6 +837,7 @@ private struct PersonEditor: View {
                     repeatedChoice = nil
                     error = nil
                 }
+                .desktopSheetSize()
             }
         }
     }
@@ -817,6 +918,50 @@ private struct LicenseView: View {
             .navigationTitle("O aplikaciji")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Gotovo") { dismiss() } } }
+        }
+    }
+}
+
+// Catalyst sheets need a useful initial size in a resizable desktop window.
+extension View {
+    @ViewBuilder func desktopSheetSize() -> some View {
+        #if targetEnvironment(macCatalyst)
+        self.frame(minWidth: 540, idealWidth: 640, minHeight: 560, idealHeight: 700)
+        #else
+        self
+        #endif
+    }
+}
+
+private struct MonitorLayoutKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var monitorLayout: Bool {
+        get { self[MonitorLayoutKey.self] }
+        set { self[MonitorLayoutKey.self] = newValue }
+    }
+}
+
+/// One layout instance preserves control state when a window crosses the breakpoint.
+struct MonitorColumns<Left: View, Right: View>: View {
+    @Environment(\.monitorLayout) private var wide
+    let left: Left
+    let right: Right
+
+    init(@ViewBuilder left: () -> Left, @ViewBuilder right: () -> Right) {
+        self.left = left()
+        self.right = right()
+    }
+
+    var body: some View {
+        let layout = wide
+            ? AnyLayout(HStackLayout(alignment: .top, spacing: 20))
+            : AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+        layout {
+            left.frame(maxWidth: .infinity, alignment: .topLeading)
+            right.frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
 }

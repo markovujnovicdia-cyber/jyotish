@@ -53,6 +53,8 @@ public struct TransitComparisonView: View {
             }
             .font(.subheadline.weight(.semibold))
             TransitOverlayChart(natal: natal, rows: rows, referenceSign: referenceSign(), reference: reference)
+                .frame(maxWidth: 440)
+                .frame(maxWidth: .infinity)
                 .accessibilityIdentifier("transit-overlay-chart")
             Text("Prva kuća: \(Astro.signs[referenceSign()]). Oba sloja prikazuju položaje u istom zodijaku.")
                 .font(.subheadline).foregroundStyle(.secondary)

@@ -5,7 +5,25 @@ ugrađeni Swiss Ephemeris C 2.10.03**. Za računanje na iPhoneu nije potreban Ma
 Python, internet ni vanjski server. Xcode na Macu potreban je za kompilaciju,
 simulator i instaliranje razvojne aplikacije.
 
-## Pokretanje iPhone aplikacije
+## Pokretanje na Macu (Mac Catalyst)
+
+U punom Xcodeu otvorite `Jyotish.xcodeproj`, odaberite shemu `Jyotish` i
+odredište **My Mac (Mac Catalyst)** pa pokrenite aplikaciju. Potreban je
+macOS 14 ili noviji. Mac izdanje koristi bočnu navigaciju, kartu i položaje
+planeta jedan uz drugi, obrasce prilagođene prozoru te **⌘N** za novu osobu.
+Raspored se prilagođava stvarnoj širini prozora, uključujući iOS aplikaciju
+pokrenutu na Macu. Na širokom prozoru karta je ograničena na 420 točaka,
+uz nju je sažeta tablica planeta, a godišnji detalji raspoređeni su u dva
+stupca. Pri užem prozoru prikazuje se jedan stupac. Varshaphala prvo
+prikazuje kartu, zatim pojedinosti; sadržaj je ograničen na širinu od 1180
+točaka radi čitljivosti na laptopu.
+Podaci ostaju lokalno na uređaju; prijenos osoba s iPhonea nije automatski.
+
+Za provjeru kompilacije na Macu: `bash scripts/validate-mac.sh`.
+Ova prilagodba nije kompilirana niti vizualno provjerena u Linux okruženju;
+za to su potrebni Appleovi SDK-ovi i pokretanje na Macu.
+
+## Pokretanje iPhone aplikacije u Xcodeu
 
 1. Na Macu otvorite `Jyotish.xcodeproj` u punom Xcodeu.
 2. Odaberite zajedničku shemu `Jyotish` i iPhone simulator s iOS-om 17 ili novijim.

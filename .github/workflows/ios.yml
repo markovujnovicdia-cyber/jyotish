@@ -13,6 +13,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mac-catalyst:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Mac Catalyst app
+        run: bash scripts/validate-mac.sh
+      - name: Preserve Mac build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-catalyst-validation
+          path: .validation/mac/run.*/xcodebuild.log
+          include-hidden-files: true
+          if-no-files-found: warn
   simulator:
     runs-on: macos-15
     timeout-minutes: 45
