@@ -79,6 +79,19 @@ int jy_ascendant(double jd, double latitude, double longitude, double *ascendant
     *ascendant = ascmc[0];
     return result;
 }
+int jy_sripati_cusps(double jd, double latitude, double longitude, double *output) {
+    double cusps[13], ascmc[10];
+    if (!isfinite(jd) || !isfinite(latitude) || !isfinite(longitude) || output == NULL)
+        return -1;
+    int result = swe_houses_ex(jd, SEFLG_SIDEREAL,
+                               latitude, longitude, 'O', cusps, ascmc);
+    if (result < 0) return result;
+    for (int index = 0; index < 12; index++) {
+        if (!isfinite(cusps[index + 1])) return -1;
+        output[index] = swe_degnorm(cusps[index + 1]);
+    }
+    return result;
+}
 int jy_daytime(double jd, double latitude, double longitude, double *altitude, char *error) {
     double solar[6], geographic[3] = {longitude, latitude, 0}, horizontal[3];
     int result = swe_calc_ut(jd, SE_SUN, SEFLG_SWIEPH | SEFLG_SPEED, solar, error);

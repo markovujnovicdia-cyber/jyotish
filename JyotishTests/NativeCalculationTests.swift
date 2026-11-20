@@ -110,19 +110,50 @@ final class BirthInputTests: XCTestCase {
     func testAnnualReportConventionsReachApplicationCalculations() throws {
         let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
         let person = Person(name: "Annual reference", birthDate: birth,
-                            latitude: 45.4881, longitude: 16.3745, timeZone: "Europe/Zagreb")
+                            latitude: 45.45, longitude: 16.0 + 22.0 / 60.0, timeZone: "Europe/Zagreb")
         let request = CalculationRequest(person: person, kind: .annual, year: 2026, referenceDate: birth)
         let result = try XCTUnwrap(NativeCalculations.calculate(request).annual)
         XCTAssertEqual(result.tajikaConvention, .longitudeBothOrbs)
         XCTAssertEqual(result.muddaYearConvention, .fixedGregorianYear)
-        XCTAssertEqual(result.sahamsConvention, .tajikaRoga)
+        XCTAssertEqual(result.sahamsConvention, .tajikaSripati)
         XCTAssertEqual(result.lunarNodeConvention, .meanTropicalTrueAyanamsa)
+        XCTAssertEqual(result.timeConvention, .historical2019Forecast)
+        let printedReturn = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-12-27T06:43:23Z"))
+        XCTAssertEqual(result.returnDate.timeIntervalSince1970, printedReturn.timeIntervalSince1970, accuracy: 0.5)
         let rahu = try XCTUnwrap(result.chart.positions["Rahu"])
         XCTAssertEqual(rahu.longitude, 298 + 51.0 / 60 + 15.0 / 3600, accuracy: 1.0 / 3600)
         XCTAssertEqual(result.ithasala.count, 6)
         XCTAssertEqual(result.isarapha.count, 3)
         XCTAssertEqual(result.muddaDasha.last!.end.timeIntervalSince(result.returnDate) / 86400,
                        365.2425, accuracy: 1e-8)
+    }
+
+
+    func testChangingTimeModelChangesRequestAndRecomputesAnnualReturn() throws {
+        let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
+        let person = Person(name: "Annual reference", birthDate: birth,
+                            latitude: 45.45, longitude: 16.0 + 22.0 / 60.0, timeZone: "Europe/Zagreb")
+        let reference = CalculationRequest(person: person, kind: .annual, year: 2026, referenceDate: birth)
+        let current = CalculationRequest(person: person, kind: .annual, year: 2026, referenceDate: birth,
+                                         timeConvention: .currentSwiss)
+        XCTAssertNotEqual(reference, current)
+        let referenceOutput = try XCTUnwrap(NativeCalculations.calculate(reference).annual)
+        let currentOutput = try XCTUnwrap(NativeCalculations.calculate(current).annual)
+        XCTAssertEqual(currentOutput.timeConvention, .currentSwiss)
+        XCTAssertGreaterThan(currentOutput.returnDate.timeIntervalSince(referenceOutput.returnDate), 13)
+        XCTAssertLessThan(currentOutput.returnDate.timeIntervalSince(referenceOutput.returnDate), 14)
+    }
+
+    func testVimshottariYearMatchesConfirmedPLSettings() throws {
+        let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
+        let person = Person(name: "Dasha reference", birthDate: birth,
+                            latitude: 45.45, longitude: 16.0 + 22.0 / 60.0, timeZone: "Europe/Zagreb")
+        let request = CalculationRequest(person: person, kind: .dasha, year: 2026, referenceDate: birth)
+        let output = try NativeCalculations.calculate(request)
+        XCTAssertEqual(output.vimshottariYear, .julian)
+        let first = try XCTUnwrap(output.mahaDashas.first)
+        let years = try XCTUnwrap(Dasha.lordYears[first.lord])
+        XCTAssertEqual(first.end.timeIntervalSince(first.start) / 86400, years * 365.25, accuracy: 1e-8)
     }
 
 }

@@ -69,7 +69,12 @@ u ovu nativnu inačicu; njihov izvor nije uklonjen ni zamijenjen.
 Usporedba s dostavljenim izvještajima **Parashara’s Light 9** za Varshaphalu
 2026.–2027. sada pokriva natalne položaje planeta, Ithasala/Esharpha i Manau
 parove, Mudda razdoblja i devet mjesečnih povrataka. Obje aplikacije koriste
-korekcije u istoj jezgri. To nije potpuno podudaranje svih PL9 izračuna:
+korekcije u istoj jezgri. Potvrđene postavke uključuju Vimshottari godinu od
+365,25 dana i ostatak prema stupnju Mjeseca; referentni model vremena daje
+povratak 27.12.2026. u 07:43:23,18, a 15 zajedničkih Sahama provjereno je s
+izvještajem. Za usporedbu ove osobe ručno unesite širinu 45,45 i dužinu
+16,3666666667, uz Europe/Zagreb. U aplikaciji se može odabrati aktualni ili
+referentni model vremena. To nije potpuno podudaranje svih PL9 izračuna:
 preostale razlike, točnost vremenskih usporedbi i nedostajuće postavke navedene
 su u [referentnoj usporedbi](docs/PARASHARA_REFERENCE.md).
 
@@ -80,7 +85,7 @@ python3 scripts/validate_xcode_project.py
 ```
 
 U ovom Linux okruženju stvarno je kompajlirana C/Swift računska jezgra i
-**51 XCTest test prolazi u Debug i Release konfiguraciji**. Referentni slučajevi
+**92 XCTest testa prolaze u Debug i Release konfiguraciji**. Referentni slučajevi
 pokrivaju četiri natalne, pet godišnjih i 60 mjesečnih karata te stotine Tajika
 provjera. Položaji se s istim Swiss datotekama uspoređuju unutar 1e-7 stupnja.
 Ispravljena je i pogreška simulatora: Swiss Ephemeris tiho odbacuje putanje

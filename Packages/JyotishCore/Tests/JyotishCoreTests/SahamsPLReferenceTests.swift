@@ -65,7 +65,7 @@ final class SahamsPLReferenceTests: XCTestCase {
         let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
         let zone = try XCTUnwrap(TimeZone(identifier: "Europe/Zagreb"))
         let annual = try Annual.calculate(
-            birthDate: birth, latitude: 45.4881, longitude: 16.3745,
+            birthDate: birth, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0,
             year: 2026, birthTimeZone: zone, sahamsConvention: .tajikaRoga
         )
         let expectedYasha = 270.0 + 17 + 16.0 / 60 + 6.0 / 3600

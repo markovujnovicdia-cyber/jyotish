@@ -68,6 +68,14 @@ public enum LunarNodeConvention: String, Codable, Sendable {
     case meanTropicalTrueAyanamsa
 }
 
+/// Astronomical time conversion is distinct from civil display time zones.
+public enum EphemerisTimeConvention: String, Codable, Sendable {
+    case currentSwiss
+    /// Official historical Swiss future forecast after its 2019 table end;
+    /// earlier observational epochs retain the current Swiss Delta T model.
+    case historical2019Forecast
+}
+
 /// Swiss Ephemeris owns process-global state. Every C entry is serialized and its
 /// resource path/Lahiri mode restored under the same lock. No network is used.
 public enum Ephemeris {
@@ -93,7 +101,8 @@ public enum Ephemeris {
     public static func julianDay(date: Date) -> Double { date.timeIntervalSince1970 / 86400 + 2440587.5 }
     public static func date(julianDay: Double) -> Date { Date(timeIntervalSince1970: (julianDay - 2440587.5) * 86400) }
 
-    private static func configure(julianDay: Double) throws {
+    private static func configure(julianDay: Double,
+                                   timeConvention: EphemerisTimeConvention = .currentSwiss) throws {
         // Gregorian 1800-01-01 through 2400-01-01 (exclusive).
         guard julianDay.isFinite, julianDay >= 2378496.5, julianDay < 2597641.5 else { throw EphemerisError.unsupportedDate }
         guard let source = Bundle.module.url(forResource: "Ephemeris", withExtension: nil) else {
@@ -103,6 +112,9 @@ public enum Ephemeris {
         let status = directory.path.withCString { jy_set_path($0) }
         if status == -2 { throw EphemerisError.conflictingResourceOverride }
         guard status == 0 else { throw EphemerisError.resourcePathTooLong }
+        guard jy_set_time_convention(julianDay, timeConvention == .historical2019Forecast ? 1 : 0) == 0 else {
+            throw EphemerisError.calculation("Nevaljana konvencija astronomskog vremena.")
+        }
     }
     private static func coordinates(_ latitude: Double, _ longitude: Double) throws {
         guard latitude.isFinite, longitude.isFinite, latitude > -90, latitude < 90,
@@ -122,9 +134,10 @@ public enum Ephemeris {
         return output
     }
     public static func positions(julianDay: Double,
-                                  nodeConvention: LunarNodeConvention = .swissSidereal) throws -> [String: PlanetPosition] {
+                                  nodeConvention: LunarNodeConvention = .swissSidereal,
+                                  timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> [String: PlanetPosition] {
         lock.lock(); defer { lock.unlock() }
-        try configure(julianDay: julianDay)
+        try configure(julianDay: julianDay, timeConvention: timeConvention)
         var result: [String: PlanetPosition] = [:]
         for (name, code) in codes {
             let output = try values(julianDay: julianDay, body: code, nodeConvention: nodeConvention)
@@ -135,10 +148,11 @@ public enum Ephemeris {
         }
         return result
     }
-    public static func ascendant(julianDay: Double, latitude: Double, longitude: Double) throws -> Double {
+    public static func ascendant(julianDay: Double, latitude: Double, longitude: Double,
+                                  timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> Double {
         lock.lock(); defer { lock.unlock() }
         try coordinates(latitude, longitude)
-        try configure(julianDay: julianDay)
+        try configure(julianDay: julianDay, timeConvention: timeConvention)
         var ascendant = 0.0
         guard jy_ascendant(julianDay, latitude, longitude, &ascendant) >= 0, ascendant.isFinite else {
             throw EphemerisError.calculation("Ascendent nije dostupan")
@@ -146,19 +160,22 @@ public enum Ephemeris {
         return Astro.normalize(ascendant)
     }
     public static func chart(date: Date, latitude: Double, longitude: Double,
-                              nodeConvention: LunarNodeConvention = .swissSidereal) throws -> Chart {
+                              nodeConvention: LunarNodeConvention = .swissSidereal,
+                              timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> Chart {
         let jd = julianDay(date: date)
-        return try Chart(julianDay: jd, ascendantLongitude: ascendant(julianDay: jd, latitude: latitude, longitude: longitude), positions: positions(julianDay: jd, nodeConvention: nodeConvention))
+        return try Chart(julianDay: jd, ascendantLongitude: ascendant(julianDay: jd, latitude: latitude, longitude: longitude, timeConvention: timeConvention), positions: positions(julianDay: jd, nodeConvention: nodeConvention, timeConvention: timeConvention))
     }
-    public static func sunLongitude(julianDay: Double) throws -> Double {
+    public static func sunLongitude(julianDay: Double,
+                                     timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> Double {
         lock.lock(); defer { lock.unlock() }
-        try configure(julianDay: julianDay)
+        try configure(julianDay: julianDay, timeConvention: timeConvention)
         return Astro.normalize(try values(julianDay: julianDay, body: 0)[0])
     }
-    public static func isDaytime(julianDay: Double, latitude: Double, longitude: Double) throws -> Bool {
+    public static func isDaytime(julianDay: Double, latitude: Double, longitude: Double,
+                                  timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> Bool {
         lock.lock(); defer { lock.unlock() }
         try coordinates(latitude, longitude)
-        try configure(julianDay: julianDay)
+        try configure(julianDay: julianDay, timeConvention: timeConvention)
         var altitude = 0.0
         var error = [CChar](repeating: 0, count: 256)
         let status = jy_daytime(julianDay, latitude, longitude, &altitude, &error)
@@ -167,10 +184,11 @@ public enum Ephemeris {
         }
         return altitude >= 0
     }
-    public static func riseOrSet(julianDay: Double, latitude: Double, longitude: Double, isRise: Bool) throws -> Double {
+    public static func riseOrSet(julianDay: Double, latitude: Double, longitude: Double, isRise: Bool,
+                                  timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> Double {
         lock.lock(); defer { lock.unlock() }
         try coordinates(latitude, longitude)
-        try configure(julianDay: julianDay)
+        try configure(julianDay: julianDay, timeConvention: timeConvention)
         var result = 0.0
         var error = [CChar](repeating: 0, count: 256)
         guard jy_rise_set(julianDay, latitude, longitude, isRise ? 1 : 0, &result, &error) >= 0, result.isFinite else {
@@ -178,8 +196,24 @@ public enum Ephemeris {
         }
         return result
     }
-    public static func sunriseSunset(julianDay: Double, latitude: Double, longitude: Double) throws -> (sunrise: Double, sunset: Double) {
-        try (riseOrSet(julianDay: julianDay - 0.5, latitude: latitude, longitude: longitude, isRise: true),
-             riseOrSet(julianDay: julianDay - 0.5, latitude: latitude, longitude: longitude, isRise: false))
+    public static func sunriseSunset(julianDay: Double, latitude: Double, longitude: Double,
+                                       timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> (sunrise: Double, sunset: Double) {
+        try (riseOrSet(julianDay: julianDay - 0.5, latitude: latitude, longitude: longitude, isRise: true, timeConvention: timeConvention),
+             riseOrSet(julianDay: julianDay - 0.5, latitude: latitude, longitude: longitude, isRise: false, timeConvention: timeConvention))
+    }
+
+    /// Twelve Sripati house midpoints, with house 1 at index zero.
+    /// These angles do not replace whole-sign house lord selection.
+    public static func sripatiCusps(julianDay: Double, latitude: Double, longitude: Double,
+                                    timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> [Double] {
+        lock.lock(); defer { lock.unlock() }
+        try coordinates(latitude, longitude)
+        try configure(julianDay: julianDay, timeConvention: timeConvention)
+        var cusps = [Double](repeating: 0, count: 12)
+        guard jy_sripati_cusps(julianDay, latitude, longitude, &cusps) >= 0,
+              cusps.allSatisfy(\.isFinite) else {
+            throw EphemerisError.calculation("Sripati kuće nisu dostupne.")
+        }
+        return cusps.map(Astro.normalize)
     }
 }

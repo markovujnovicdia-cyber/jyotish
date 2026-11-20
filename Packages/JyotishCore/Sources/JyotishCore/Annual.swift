@@ -30,6 +30,7 @@ public struct AnnualResult: Sendable {
     public let muddaYearConvention: MuddaYearConvention
     public let sahamsConvention: SahamsConvention
     public let lunarNodeConvention: LunarNodeConvention
+    public let timeConvention: EphemerisTimeConvention
     public let arudhaSign: Int
     public let bhriguBinduLongitude: Double
     public let gulika: GulikaResult?
@@ -63,7 +64,8 @@ public enum Annual {
     /// Retains the Python ±3-day bisection when its endpoints bracket the root.
     /// If the day-28 guess excludes a late-month return, expands the *search*
     /// window; the solar longitude formula and angular tolerance are unchanged.
-    public static func solarReturn(natalSunLongitude: Double, targetYear: Int, birthMonth: Int, birthDay: Int) throws -> Double {
+    public static func solarReturn(natalSunLongitude: Double, targetYear: Int, birthMonth: Int, birthDay: Int,
+                                   timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> Double {
         guard natalSunLongitude.isFinite, (1800...2399).contains(targetYear),
               (1...12).contains(birthMonth), (1...31).contains(birthDay) else {
             throw AnnualError.invalidInput("Datum ili dužina solarnog povratka izvan je podržanog raspona.")
@@ -72,13 +74,13 @@ public enum Annual {
         guard let guessDate = utcCalendar.date(from: components) else {
             throw AnnualError.invalidInput("Nevaljan datum solarnog povratka.")
         }
-        return try findSolarLongitude(targetLongitude: Astro.normalize(natalSunLongitude), guess: Ephemeris.julianDay(date: guessDate), initialWindow: 3)
+        return try findSolarLongitude(targetLongitude: Astro.normalize(natalSunLongitude), guess: Ephemeris.julianDay(date: guessDate), initialWindow: 3, timeConvention: timeConvention)
     }
 
-    private static func findSolarLongitude(targetLongitude: Double, guess: Double, initialWindow: Double) throws -> Double {
+    private static func findSolarLongitude(targetLongitude: Double, guess: Double, initialWindow: Double, timeConvention: EphemerisTimeConvention) throws -> Double {
         guard targetLongitude.isFinite, guess.isFinite else { throw AnnualError.invalidInput("Nevaljana dužina ili Julijanski dan.") }
         func difference(_ jd: Double) throws -> Double {
-            Astro.signedDifference(try Ephemeris.sunLongitude(julianDay: jd) - targetLongitude)
+            Astro.signedDifference(try Ephemeris.sunLongitude(julianDay: jd, timeConvention: timeConvention) - targetLongitude)
         }
         // Clamp search probes to the bundled 1800..<2400 ephemeris range.
         let minimumJD = 2378496.5
@@ -117,16 +119,17 @@ public enum Annual {
         return ((sign + completedYears) % 12 + 12) % 12
     }
 
-    public static func activeYear(birthDate: Date, latitude: Double, longitude: Double, referenceDate: Date, birthTimeZone: TimeZone = TimeZone(secondsFromGMT: 0)!) throws -> Int {
+    public static func activeYear(birthDate: Date, latitude: Double, longitude: Double, referenceDate: Date, birthTimeZone: TimeZone = TimeZone(secondsFromGMT: 0)!,
+                                  timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> Int {
         guard birthDate.timeIntervalSince1970.isFinite, referenceDate.timeIntervalSince1970.isFinite,
               referenceDate >= birthDate else { throw AnnualError.invalidInput("Referentni datum mora biti nakon rođenja.") }
-        let natal = try Ephemeris.chart(date: birthDate, latitude: latitude, longitude: longitude)
+        let natal = try Ephemeris.chart(date: birthDate, latitude: latitude, longitude: longitude, timeConvention: timeConvention)
         guard let sun = natal.positions["Sunce"] else { throw AnnualError.missingPlanet("Sunce") }
         var birthCalendar = utcCalendar
         birthCalendar.timeZone = birthTimeZone
         let birth = birthCalendar.dateComponents([.year, .month, .day], from: birthDate)
         let year = utcCalendar.component(.year, from: referenceDate)
-        let start = try solarReturn(natalSunLongitude: sun.longitude, targetYear: year, birthMonth: birth.month!, birthDay: birth.day!)
+        let start = try solarReturn(natalSunLongitude: sun.longitude, targetYear: year, birthMonth: birth.month!, birthDay: birth.day!, timeConvention: timeConvention)
         return max(Ephemeris.julianDay(date: referenceDate) >= start ? year : year - 1, birth.year!)
     }
 
@@ -134,7 +137,8 @@ public enum Annual {
                                  tajikaConvention: TajikaAspectConvention = .legacySignBased,
                                  muddaYearConvention: MuddaYearConvention = .solarReturnInterval,
                                  sahamsConvention: SahamsConvention = .legacyPython,
-                                 nodeConvention: LunarNodeConvention = .swissSidereal) throws -> AnnualResult {
+                                 nodeConvention: LunarNodeConvention = .swissSidereal,
+                                 timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> AnnualResult {
         guard birthDate.timeIntervalSince1970.isFinite, (1800...2398).contains(year) else {
             throw AnnualError.invalidInput("Podržane godine Varshaphale su 1800–2398.")
         }
@@ -144,26 +148,29 @@ public enum Annual {
         guard let birthYear = birth.year, let month = birth.month, let day = birth.day, year >= birthYear else {
             throw AnnualError.invalidInput("Godina Varshaphale mora biti nakon godine rođenja.")
         }
-        let natal = try Ephemeris.chart(date: birthDate, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention)
+        let natal = try Ephemeris.chart(date: birthDate, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention, timeConvention: timeConvention)
         guard let sun = natal.positions["Sunce"], let moon = natal.positions["Mjesec"] else { throw AnnualError.missingPlanet("Sunce/Mjesec") }
-        let jd = try solarReturn(natalSunLongitude: sun.longitude, targetYear: year, birthMonth: month, birthDay: day)
-        let nextJD = try solarReturn(natalSunLongitude: sun.longitude, targetYear: year + 1, birthMonth: month, birthDay: day)
+        let jd = try solarReturn(natalSunLongitude: sun.longitude, targetYear: year, birthMonth: month, birthDay: day, timeConvention: timeConvention)
+        let nextJD = try solarReturn(natalSunLongitude: sun.longitude, targetYear: year + 1, birthMonth: month, birthDay: day, timeConvention: timeConvention)
         let start = Ephemeris.date(julianDay: jd)
         let end = Ephemeris.date(julianDay: nextJD)
-        let chart = try Ephemeris.chart(date: start, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention)
+        let chart = try Ephemeris.chart(date: start, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention, timeConvention: timeConvention)
         let age = year - birthYear
         let munthaSign = muntha(natalAscendant: natal.ascendantLongitude, completedYears: age)
-        let isDay = try Ephemeris.isDaytime(julianDay: jd, latitude: latitude, longitude: longitude)
+        let isDay = try Ephemeris.isDaytime(julianDay: jd, latitude: latitude, longitude: longitude, timeConvention: timeConvention)
         let arudha = try SpecialPoints.arudha(houseSign: chart.ascendantSign, positions: chart.positions)
         let bhrigu = try SpecialPoints.bhriguBindu(moonLongitude: chart.positions["Mjesec"]!.longitude, rahuLongitude: chart.positions["Rahu"]!.longitude)
-        let gulika = optionalGulika(julianDay: jd, date: start, latitude: latitude, longitude: longitude)
+        let gulika = optionalGulika(julianDay: jd, date: start, latitude: latitude, longitude: longitude, timeConvention: timeConvention)
+        let cusps = sahamsConvention == .tajikaSripati
+            ? try Ephemeris.sripatiCusps(julianDay: jd, latitude: latitude, longitude: longitude, timeConvention: timeConvention)
+            : nil
         return AnnualResult(
             year: year, returnDate: start, nextReturnDate: end, completedYears: age,
             chart: chart, munthaSignIndex: munthaSign, isDay: isDay, tajikaConvention: tajikaConvention,
-            sahams: try Sahams.calculate(ascendant: chart.ascendantLongitude, positions: chart.positions, isDay: isDay, convention: sahamsConvention),
+            sahams: try Sahams.calculate(ascendant: chart.ascendantLongitude, positions: chart.positions, isDay: isDay, convention: sahamsConvention, houseCusps: cusps),
             muddaDasha: try Dasha.mudda(natalMoonLongitude: moon.longitude, completedYears: age, start: start, end: end, yearConvention: muddaYearConvention),
             natalMoonLongitude: moon.longitude, muddaYearConvention: muddaYearConvention,
-            sahamsConvention: sahamsConvention, lunarNodeConvention: nodeConvention,
+            sahamsConvention: sahamsConvention, lunarNodeConvention: nodeConvention, timeConvention: timeConvention,
             arudhaSign: arudha, bhriguBinduLongitude: bhrigu, gulika: gulika.result, gulikaError: gulika.error,
             ithasala: try Tajika.ithasala(positions: chart.positions, aspectConvention: tajikaConvention),
             isarapha: try Tajika.isarapha(positions: chart.positions, aspectConvention: tajikaConvention),
@@ -172,16 +179,17 @@ public enum Annual {
     }
 
     public static func masa(natalSunLongitude: Double, annualJulianDay: Double, latitude: Double, longitude: Double,
-                             nodeConvention: LunarNodeConvention = .swissSidereal) throws -> [MasaResult] {
+                             nodeConvention: LunarNodeConvention = .swissSidereal,
+                             timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> [MasaResult] {
         guard natalSunLongitude.isFinite, annualJulianDay.isFinite else { throw AnnualError.invalidInput("Nevaljani podaci Masa Praveše.") }
         return try (0..<12).map { index in
             let target = Astro.normalize(natalSunLongitude + Double(index) * 30)
             let jd: Double
             if index == 0 { jd = annualJulianDay }
-            else { jd = try findSolarLongitude(targetLongitude: target, guess: annualJulianDay + Double(index) * (365.2425 / 12), initialWindow: 4) }
+            else { jd = try findSolarLongitude(targetLongitude: target, guess: annualJulianDay + Double(index) * (365.2425 / 12), initialWindow: 4, timeConvention: timeConvention) }
             let date = Ephemeris.date(julianDay: jd)
-            let chart = try Ephemeris.chart(date: date, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention)
-            let gulika = optionalGulika(julianDay: jd, date: date, latitude: latitude, longitude: longitude)
+            let chart = try Ephemeris.chart(date: date, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention, timeConvention: timeConvention)
+            let gulika = optionalGulika(julianDay: jd, date: date, latitude: latitude, longitude: longitude, timeConvention: timeConvention)
             return MasaResult(
                 monthNumber: index + 1, returnDate: date, chart: chart,
                 arudhaSign: try SpecialPoints.arudha(houseSign: chart.ascendantSign, positions: chart.positions),
@@ -191,9 +199,10 @@ public enum Annual {
         }
     }
 
-    private static func optionalGulika(julianDay: Double, date: Date, latitude: Double, longitude: Double) -> (result: GulikaResult?, error: String?) {
+    private static func optionalGulika(julianDay: Double, date: Date, latitude: Double, longitude: Double,
+                                      timeConvention: EphemerisTimeConvention) -> (result: GulikaResult?, error: String?) {
         do {
-            return (try SpecialPoints.gulika(julianDay: julianDay, localDate: dateString(date), latitude: latitude, longitude: longitude), nil)
+            return (try SpecialPoints.gulika(julianDay: julianDay, localDate: dateString(date), latitude: latitude, longitude: longitude, timeConvention: timeConvention), nil)
         } catch { return (nil, error.localizedDescription) }
     }
 

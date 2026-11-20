@@ -48,7 +48,7 @@ public enum SpecialPoints {
     }
 
     public static func compute(chart: Chart, localDate: String, latitude: Double,
-                                longitude: Double) throws -> NatalSpecialPoints {
+                                longitude: Double, timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> NatalSpecialPoints {
         guard let moon = chart.positions["Mjesec"] else {
             throw NatalCalculationError.missingPlanet("Mjesec")
         }
@@ -61,7 +61,7 @@ public enum SpecialPoints {
         let bp = try bhriguBindu(moonLongitude: moon.longitude, rahuLongitude: rahu.longitude)
         do {
             let result = try gulika(julianDay: chart.julianDay, localDate: localDate,
-                                    latitude: latitude, longitude: longitude)
+                                    latitude: latitude, longitude: longitude, timeConvention: timeConvention)
             return NatalSpecialPoints(arudhaSign: al, upapadaSign: ul, darapadaSign: a7,
                                       bhriguBinduLongitude: bp, gulika: result, gulikaError: nil)
         } catch {
@@ -93,16 +93,16 @@ public enum SpecialPoints {
     /// Exactly preserves the Python wrapper's sunrise search and minute-truncated
     /// horizon-event times, even though Swiss Ephemeris provides finer precision.
     public static func gulika(julianDay: Double, localDate: String, latitude: Double,
-                               longitude: Double) throws -> GulikaResult {
+                               longitude: Double, timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> GulikaResult {
         guard julianDay.isFinite else { throw NatalCalculationError.invalidDate }
         let weekday = try weekday(localDate: localDate)
         func rise(_ date: Double) throws -> Double {
             try Ephemeris.riseOrSet(julianDay: date, latitude: latitude,
-                                    longitude: longitude, isRise: true)
+                                    longitude: longitude, isRise: true, timeConvention: timeConvention)
         }
         func set(_ date: Double) throws -> Double {
             try Ephemeris.riseOrSet(julianDay: date, latitude: latitude,
-                                    longitude: longitude, isRise: false)
+                                    longitude: longitude, isRise: false, timeConvention: timeConvention)
         }
         let candidateSunrise = try rise(julianDay - 1.5)
         let candidateSunset = try set(candidateSunrise)
@@ -127,7 +127,7 @@ public enum SpecialPoints {
             // Python utc_to_julian_day ignores datetime microseconds.
             let truncated = Date(timeIntervalSince1970: floor(date.timeIntervalSince1970))
             return try Ephemeris.ascendant(julianDay: Ephemeris.julianDay(date: truncated),
-                                           latitude: latitude, longitude: longitude)
+                                           latitude: latitude, longitude: longitude, timeConvention: timeConvention)
         }
     }
 

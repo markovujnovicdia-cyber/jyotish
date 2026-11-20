@@ -4,6 +4,8 @@ public enum SahamsConvention: String, Codable, Sendable {
     case legacyPython
     /// Correct the Roga operand to Saturn while retaining the other formulas.
     case tajikaRoga
+    /// Sripati cusp longitudes with whole-sign house lords and corrected Roga.
+    case tajikaSripati
 }
 
 /// Twenty numeric saham longitudes, translated from `core/sahams.py`.
@@ -18,13 +20,20 @@ public enum Sahams {
     }
 
     public static func calculate(ascendant: Double, positions: [String: PlanetPosition], isDay: Bool,
-                                 convention: SahamsConvention = .legacyPython) throws -> [String: Double] {
+                                 convention: SahamsConvention = .legacyPython,
+                                 houseCusps: [Double]? = nil) throws -> [String: Double] {
         for name in ["Sunce", "Mjesec", "Mars", "Merkur", "Jupiter", "Venera", "Saturn"] {
             guard let position = positions[name], position.longitude.isFinite else {
                 throw AnnualError.missingPlanet(name)
             }
         }
         guard ascendant.isFinite else { throw AnnualError.invalidInput("Ascendent mora biti konačan broj.") }
+        if convention == .tajikaSripati {
+            guard let houseCusps, houseCusps.count == 12,
+                  houseCusps.allSatisfy({ $0.isFinite && (0..<360).contains($0) }) else {
+                throw AnnualError.invalidInput("Sripati Sahami zahtijevaju svih 12 valjanih vrhova kuća.")
+            }
+        }
         let asc = Astro.normalize(ascendant)
         let su = positions["Sunce"]!.longitude
         let mo = positions["Mjesec"]!.longitude
@@ -37,8 +46,13 @@ public enum Sahams {
             if reverse && !isDay { return arc(b, a, c ?? asc) }
             return arc(a, b, c ?? asc)
         }
-        func house(_ number: Int) -> Double { Astro.normalize(asc + Double(30 * (number - 1))) }
-        func lord(_ number: Int) -> Double { positions[Astro.signLords[Int(house(number) / 30)]]!.longitude }
+        func wholeSignLongitude(_ number: Int) -> Double { Astro.normalize(asc + Double(30 * (number - 1))) }
+        func house(_ number: Int) -> Double {
+            convention == .tajikaSripati ? houseCusps![number - 1] : wholeSignLongitude(number)
+        }
+        func lord(_ number: Int) -> Double {
+            positions[Astro.signLords[Int(wholeSignLongitude(number) / 30)]]!.longitude
+        }
         let punya = calc(mo, su)
         let sastra = calc(ju, sa, me)
         return [
@@ -47,7 +61,7 @@ public enum Sahams {
             "Preeti": calc(sastra, punya), "Putra": calc(ju, mo, reverse: false),
             "Karma": calc(ma, me), "Vyapara": calc(ma, sa, reverse: false),
             "Artha": calc(house(2), lord(2), reverse: false),
-            "Labha": calc(house(11), lord(11), reverse: false), "Roga": calc(convention == .tajikaRoga ? sa : asc, mo),
+            "Labha": calc(house(11), lord(11), reverse: false), "Roga": calc(convention == .legacyPython ? asc : sa, mo),
             "Matri": calc(mo, ve), "Pitri": calc(sa, su), "Bandhu": calc(me, mo),
             "Bhratri": calc(ju, sa, reverse: false), "Rajya": calc(sa, su),
             "Sastra": sastra, "Sraddha": calc(ve, ma),

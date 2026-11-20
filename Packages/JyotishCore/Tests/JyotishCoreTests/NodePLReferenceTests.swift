@@ -45,8 +45,8 @@ final class NodePLReferenceTests: XCTestCase {
     func testAlternateNodeConventionPreservesClassicalPlanetsAndAscendant() throws {
         for instant in ["1976-12-26T10:55:00Z", "2026-12-27T06:43:23Z"] {
             let at = try date(instant)
-            let legacy = try Ephemeris.chart(date: at, latitude: 45.4881, longitude: 16.3745)
-            let alternative = try Ephemeris.chart(date: at, latitude: 45.4881, longitude: 16.3745,
+            let legacy = try Ephemeris.chart(date: at, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0)
+            let alternative = try Ephemeris.chart(date: at, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0,
                                                    nodeConvention: .meanTropicalTrueAyanamsa)
             XCTAssertEqual(alternative.ascendantLongitude, legacy.ascendantLongitude)
             XCTAssertEqual(alternative.julianDay, legacy.julianDay)

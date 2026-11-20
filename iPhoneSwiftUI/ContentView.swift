@@ -30,6 +30,7 @@ private enum Screen: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @StateObject private var store: PersonStore
     @StateObject private var calculations = CalculationModel()
+    @AppStorage("calculation.timeConvention") private var timeConvention: EphemerisTimeConvention = .historical2019Forecast
     @State private var selectedID: UUID?
     @State private var screen: Screen = .natal
     @State private var year = Calendar.current.component(.year, from: .now)
@@ -56,7 +57,7 @@ struct ContentView: View {
     private var person: Person? { store.people.first(where: { $0.id == selectedID }) ?? store.people.first }
     private var request: CalculationRequest? {
         guard let person else { return nil }
-        return CalculationRequest(person: person, kind: screen.kind, year: year, referenceDate: referenceDate)
+        return CalculationRequest(person: person, kind: screen.kind, year: year, referenceDate: referenceDate, timeConvention: timeConvention)
     }
     private var birthYear: Int {
         guard let person else { return 1800 }
@@ -107,6 +108,17 @@ struct ContentView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         personHeader
+                        DataCard {
+                            Picker("Model vremena", selection: $timeConvention) {
+                                Text("PL9 · referentni model").tag(EphemerisTimeConvention.historical2019Forecast)
+                                Text("Aktualni Swiss").tag(EphemerisTimeConvention.currentSwiss)
+                            }
+                            .pickerStyle(.menu)
+                            Text(timeConvention == .historical2019Forecast
+                                 ? "Povijesni model ΔT za usporedbu sa starijim izvještajima."
+                                 : "Aktualni model ΔT iz ugrađenih efemerida.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
                         if let message = store.storageError { ErrorCard(message: message) }
                         if let person {
                             controls(for: person)
@@ -169,6 +181,12 @@ struct ContentView: View {
         .task(id: person) {
             if let person { await selectCurrentAnnualYear(for: person) }
         }
+        .onChange(of: timeConvention) { _, _ in
+            // Keep the selected comparison year and invalidate an older
+            // automatic selection still running with the previous model.
+            annualSelectionGeneration = UUID()
+            annualSelectionError = nil
+        }
         .onChange(of: person, initial: true) { _, _ in
             year = min(2398, max(birthYear, year))
             if let person, referenceDate < person.birthDate { referenceDate = person.birthDate }
@@ -210,6 +228,8 @@ struct ContentView: View {
                     }
                     Text("\(BirthMoment.display(person.birthDate, zoneID: person.timeZone)) · \(person.timeZone)")
                         .font(.caption).foregroundStyle(.secondary)
+                    Text("Koordinate: \(person.latitude, specifier: "%.7f")°, \(person.longitude, specifier: "%.7f")°")
+                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                     if let place = person.birthPlace, !place.isEmpty {
                         Text(place).font(.caption).foregroundStyle(.secondary)
                     }
@@ -248,6 +268,7 @@ struct ContentView: View {
         annualSelectionGeneration = token
         annualSelectionError = nil
         let now = Date.now
+        let selectedTimeConvention = timeConvention
         let work = Task.detached(priority: .userInitiated) {
             guard let zone = TimeZone(identifier: selected.timeZone) else { throw InputError.message("Nepoznata vremenska zona.") }
             if now < selected.birthDate {
@@ -255,7 +276,7 @@ struct ContentView: View {
                 calendar.timeZone = zone
                 return calendar.component(.year, from: selected.birthDate)
             }
-            return try Annual.activeYear(birthDate: selected.birthDate, latitude: selected.latitude, longitude: selected.longitude, referenceDate: now, birthTimeZone: zone)
+            return try Annual.activeYear(birthDate: selected.birthDate, latitude: selected.latitude, longitude: selected.longitude, referenceDate: now, birthTimeZone: zone, timeConvention: selectedTimeConvention)
         }
         do {
             let activeYear = try await withTaskCancellationHandler(operation: { try await work.value }, onCancel: { work.cancel() })
@@ -275,7 +296,7 @@ struct ContentView: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("natal-results")
         case .dasha:
-            DashaView(periods: output.mahaDashas, current: output.currentDashas, referenceDate: referenceDate, zoneID: person.timeZone)
+            DashaView(periods: output.mahaDashas, current: output.currentDashas, referenceDate: referenceDate, zoneID: person.timeZone, yearConvention: output.vimshottariYear)
         case .annual:
             if let annual = output.annual { AnnualView(annual: annual, zoneID: person.timeZone) }
         case .masa:
@@ -515,6 +536,7 @@ private struct DashaView: View {
     let current: [DashaPeriod]
     let referenceDate: Date
     let zoneID: String
+    let yearConvention: VimshottariYearConvention
     private let levels = ["Maha", "Antar", "Pratyantar", "Sookshma", "Prana"]
     var body: some View {
         DataCard {
@@ -526,7 +548,7 @@ private struct DashaView: View {
         }
         DataCard {
             Text("Mahadaše i podrazdoblja").font(.headline)
-            Text("Godina = 365,2425 dana. Prvo puno razdoblje može početi prije rođenja.").font(.caption).foregroundStyle(.secondary)
+            Text("Godina = \(yearConvention == .julian ? "365,25" : "365,2425") dana. Prvo puno razdoblje može početi prije rođenja.").font(.caption).foregroundStyle(.secondary)
             ForEach(Array(periods.enumerated()), id: \.offset) { _, period in
                 DashaDisclosure(period: period, depth: 0, zoneID: zoneID)
             }
@@ -841,7 +863,7 @@ private struct PersonEditor: View {
                     TextField("Geografska širina", text: $latitude).keyboardType(.numbersAndPunctuation).accessibilityIdentifier("person-latitude")
                     TextField("Geografska dužina", text: $longitude).keyboardType(.numbersAndPunctuation).accessibilityIdentifier("person-longitude")
                 } header: { Text("Koordinate mjesta rođenja") } footer: {
-                    Text("Sjever i istok su pozitivni; jug i zapad negativni. Ručni unos radi bez interneta.")
+                    Text("Sjever i istok su pozitivni; jug i zapad negativni. Za usporedbu s drugim programom unesite iste koordinate; točka u bazi gradova može se razlikovati. Ručni unos radi bez interneta.")
                 }
                 if let error { SwiftUI.Section { Text(error).foregroundStyle(.red) } }
             }

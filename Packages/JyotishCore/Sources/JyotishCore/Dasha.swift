@@ -1,5 +1,19 @@
 import Foundation
 
+/// Vimshottari year selection is independent of the annual Mudda convention.
+/// The supplied PL9 settings select a 365.25-day year and degree-based balance.
+public enum VimshottariYearConvention: String, Codable, Sendable {
+    case gregorianMean
+    case julian
+
+    public var daysPerYear: Double {
+        switch self {
+        case .gregorianMean: return 365.2425
+        case .julian: return 365.25
+        }
+    }
+}
+
 /// Civil duration used to turn the traditional 360 Mudda parts into dates.
 /// The supplied PL9 annual report is consistent with a fixed Gregorian year,
 /// rather than the varying interval between successive astronomical returns.
@@ -22,8 +36,8 @@ public struct DashaPeriod: Codable, Equatable, Sendable {
     public func contains(_ date: Date) -> Bool { start <= date && date < end }
 }
 
-/// Direct port of OriginalPython/core/dasha.py. One Vimshottari year is
-/// 365.2425 days; first mahadasha is kept whole even when it starts before birth.
+/// The Python-compatible default year is 365.2425 days; callers can select
+/// 365.25 days. The full first mahadasha is retained even before birth.
 public enum Dasha {
     public static let daysPerYear = 365.2425
     public static let lordOrder = ["Ketu", "Venera", "Sunce", "Mjesec", "Mars", "Rahu", "Jupiter", "Saturn", "Merkur"]
@@ -46,7 +60,8 @@ public enum Dasha {
     }
 
     public static func mahadashas(moonLongitude: Double, birthDate: Date,
-                                  yearsToCover: Double = 120) throws -> [DashaPeriod] {
+                                  yearsToCover: Double = 120,
+                                  yearConvention: VimshottariYearConvention = .gregorianMean) throws -> [DashaPeriod] {
         guard birthDate.timeIntervalSince1970.isFinite, yearsToCover.isFinite,
               yearsToCover > 0, yearsToCover <= 10_000 else {
             throw NatalCalculationError.invalidPeriod
@@ -54,13 +69,14 @@ public enum Dasha {
         let nakshatra = try Nakshatra.at(longitude: moonLongitude)
         let rotated = try order(from: nakshatra.lord)
         let elapsedYears = lordYears[nakshatra.lord]! * nakshatra.fractionElapsed
-        var cursor = add(-elapsedYears * daysPerYear * 86400, to: birthDate)
-        let horizon = add(yearsToCover * daysPerYear * 86400, to: birthDate)
+        let yearDays = yearConvention.daysPerYear
+        var cursor = add(-elapsedYears * yearDays * 86400, to: birthDate)
+        let horizon = add(yearsToCover * yearDays * 86400, to: birthDate)
         var periods: [DashaPeriod] = []
         var index = 0
         while cursor < horizon {
             let lord = rotated[index % rotated.count]
-            let end = add(lordYears[lord]! * daysPerYear * 86400, to: cursor)
+            let end = add(lordYears[lord]! * yearDays * 86400, to: cursor)
             periods.append(DashaPeriod(lord: lord, start: cursor, end: end))
             cursor = end
             index += 1
@@ -95,11 +111,12 @@ public enum Dasha {
 
     /// Ordered Maha, Antar, Pratyantar, Sookshma, Prana, with half-open boundaries.
     public static func currentFiveLevels(moonLongitude: Double, birthDate: Date,
-                                          at date: Date) throws -> [DashaPeriod] {
+                                          at date: Date,
+                                          yearConvention: VimshottariYearConvention = .gregorianMean) throws -> [DashaPeriod] {
         guard date.timeIntervalSince1970.isFinite else { throw NatalCalculationError.invalidDate }
-        let years = max(120, date.timeIntervalSince(birthDate) / (86400 * daysPerYear) + 1)
+        let years = max(120, date.timeIntervalSince(birthDate) / (86400 * yearConvention.daysPerYear) + 1)
         let sequence = try mahadashas(moonLongitude: moonLongitude, birthDate: birthDate,
-                                     yearsToCover: years)
+                                     yearsToCover: years, yearConvention: yearConvention)
         var parent = try current(in: sequence, at: date)
         var result = [parent]
         for _ in 0..<4 {

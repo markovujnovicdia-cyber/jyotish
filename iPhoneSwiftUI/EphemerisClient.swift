@@ -87,6 +87,16 @@ struct CalculationRequest: Hashable, Sendable {
     let kind: CalculationKind
     let year: Int
     let referenceDate: Date
+    let timeConvention: EphemerisTimeConvention
+
+    init(person: Person, kind: CalculationKind, year: Int, referenceDate: Date,
+         timeConvention: EphemerisTimeConvention = .historical2019Forecast) {
+        self.person = person
+        self.kind = kind
+        self.year = year
+        self.referenceDate = referenceDate
+        self.timeConvention = timeConvention
+    }
 }
 
 struct CalculationOutput: Sendable {
@@ -98,15 +108,18 @@ struct CalculationOutput: Sendable {
     let currentDashas: [DashaPeriod]
     let transit: Chart?
     let ashtakavarga: AshtakavargaResult?
+    let vimshottariYear: VimshottariYearConvention
 }
 
 enum NativeCalculations {
     static func calculate(_ request: CalculationRequest) throws -> CalculationOutput {
         try Task.checkCancellation()
         let person = request.person
+        let timeConvention = request.timeConvention
+        let vimshottariYear = VimshottariYearConvention.julian
         try person.validate()
         let natal = try Ephemeris.chart(date: person.birthDate, latitude: person.latitude, longitude: person.longitude,
-                                        nodeConvention: .meanTropicalTrueAyanamsa)
+                                        nodeConvention: .meanTropicalTrueAyanamsa, timeConvention: timeConvention)
         try Task.checkCancellation()
         var special: NatalSpecialPoints?
         var annual: AnnualResult?
@@ -117,35 +130,36 @@ enum NativeCalculations {
         var ashtakavarga: AshtakavargaResult?
         switch request.kind {
         case .natal:
-            special = try SpecialPoints.compute(chart: natal, localDate: BirthMoment.localDateString(person.birthDate, zoneID: person.timeZone), latitude: person.latitude, longitude: person.longitude)
+            special = try SpecialPoints.compute(chart: natal, localDate: BirthMoment.localDateString(person.birthDate, zoneID: person.timeZone), latitude: person.latitude, longitude: person.longitude, timeConvention: timeConvention)
         case .dasha:
             guard request.referenceDate >= person.birthDate else {
                 throw InputError.message("Za pregled daša odaberite datum nakon rođenja.")
             }
             guard let moon = natal.positions["Mjesec"] else { throw InputError.message("Nedostaje položaj Mjeseca.") }
-            let years = max(120, request.referenceDate.timeIntervalSince(person.birthDate) / (86400 * 365.2425) + 1)
-            major = try Dasha.mahadashas(moonLongitude: moon.longitude, birthDate: person.birthDate, yearsToCover: years)
-            current = try Dasha.currentFiveLevels(moonLongitude: moon.longitude, birthDate: person.birthDate, at: request.referenceDate)
+            let years = max(120, request.referenceDate.timeIntervalSince(person.birthDate) / (86400 * vimshottariYear.daysPerYear) + 1)
+            major = try Dasha.mahadashas(moonLongitude: moon.longitude, birthDate: person.birthDate, yearsToCover: years, yearConvention: vimshottariYear)
+            current = try Dasha.currentFiveLevels(moonLongitude: moon.longitude, birthDate: person.birthDate, at: request.referenceDate, yearConvention: vimshottariYear)
         case .annual, .masa:
             annual = try Annual.calculate(
                 birthDate: person.birthDate, latitude: person.latitude, longitude: person.longitude,
                 year: request.year, birthTimeZone: TimeZone(identifier: person.timeZone)!,
                 tajikaConvention: .longitudeBothOrbs, muddaYearConvention: .fixedGregorianYear,
-                sahamsConvention: .tajikaRoga, nodeConvention: .meanTropicalTrueAyanamsa
+                sahamsConvention: .tajikaSripati, nodeConvention: .meanTropicalTrueAyanamsa,
+                timeConvention: timeConvention
             )
             try Task.checkCancellation()
             if request.kind == .masa, let annual, let sun = natal.positions["Sunce"] {
                 months = try Annual.masa(natalSunLongitude: sun.longitude, annualJulianDay: annual.chart.julianDay, latitude: person.latitude, longitude: person.longitude,
-                                         nodeConvention: .meanTropicalTrueAyanamsa)
+                                         nodeConvention: .meanTropicalTrueAyanamsa, timeConvention: timeConvention)
             }
         case .transit:
             transit = try Ephemeris.chart(date: request.referenceDate, latitude: person.latitude, longitude: person.longitude,
-                                          nodeConvention: .meanTropicalTrueAyanamsa)
+                                          nodeConvention: .meanTropicalTrueAyanamsa, timeConvention: timeConvention)
         case .ashtakavarga:
             ashtakavarga = try Ashtakavarga.calculate(chart: natal)
         }
         try Task.checkCancellation()
-        return CalculationOutput(natal: natal, specialPoints: special, annual: annual, months: months, mahaDashas: major, currentDashas: current, transit: transit, ashtakavarga: ashtakavarga)
+        return CalculationOutput(natal: natal, specialPoints: special, annual: annual, months: months, mahaDashas: major, currentDashas: current, transit: transit, ashtakavarga: ashtakavarga, vimshottariYear: vimshottariYear)
     }
 }
 

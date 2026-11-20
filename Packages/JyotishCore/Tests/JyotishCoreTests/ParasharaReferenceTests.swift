@@ -21,7 +21,7 @@ final class ParasharaReferenceTests: XCTestCase {
         let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
         let zone = try XCTUnwrap(TimeZone(identifier: "Europe/Zagreb"))
         let annual = try Annual.calculate(
-            birthDate: birth, latitude: 45.4881, longitude: 16.3745,
+            birthDate: birth, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0,
             year: 2026, birthTimeZone: zone,
             tajikaConvention: .longitudeBothOrbs
         )
@@ -126,7 +126,7 @@ final class ParasharaReferenceTests: XCTestCase {
         let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
         let zone = try XCTUnwrap(TimeZone(identifier: "Europe/Zagreb"))
         let annual = try Annual.calculate(
-            birthDate: birth, latitude: 45.4881, longitude: 16.3745,
+            birthDate: birth, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0,
             year: 2026, birthTimeZone: zone, tajikaConvention: .longitudeBothOrbs
         )
         var actual: Set<String> = []
@@ -197,7 +197,7 @@ final class ParasharaReferenceTests: XCTestCase {
         // alternate coordinate convention is separately checked against both
         // external epochs in NodePLReferenceTests, without a fitted offset.
         let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
-        let chart = try Ephemeris.chart(date: birth, latitude: 45.4881, longitude: 16.3745)
+        let chart = try Ephemeris.chart(date: birth, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0)
         let expected: [(String, Int, Int, Int, Int)] = [
             ("Sunce", 8, 11, 16, 27), ("Mjesec", 10, 20, 4, 21),
             ("Mars", 8, 2, 18, 30), ("Merkur", 8, 29, 30, 45),

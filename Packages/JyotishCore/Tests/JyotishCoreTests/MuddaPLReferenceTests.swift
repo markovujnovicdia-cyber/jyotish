@@ -9,8 +9,8 @@ final class MuddaPLReferenceTests: XCTestCase {
 
     private func chart() throws -> (AnnualResult, Double) {
         let birth = try date("1976-12-26T10:55:00Z")
-        let natal = try Ephemeris.chart(date: birth, latitude: 45.4881, longitude: 16.3745)
-        let annual = try Annual.calculate(birthDate: birth, latitude: 45.4881, longitude: 16.3745,
+        let natal = try Ephemeris.chart(date: birth, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0)
+        let annual = try Annual.calculate(birthDate: birth, latitude: 45.45, longitude: 16.0 + 22.0 / 60.0,
                                          year: 2026, birthTimeZone: TimeZone(identifier: "Europe/Zagreb")!)
         return (annual, try XCTUnwrap(natal.positions["Mjesec"]?.longitude))
     }
@@ -98,7 +98,7 @@ final class MuddaPLReferenceTests: XCTestCase {
         let birth = try date("1976-12-26T10:55:00Z")
         let sun = try Ephemeris.sunLongitude(julianDay: Ephemeris.julianDay(date: birth))
         let months = try Annual.masa(natalSunLongitude: sun, annualJulianDay: annual.chart.julianDay,
-                                    latitude: 45.4881, longitude: 16.3745)
+                                    latitude: 45.45, longitude: 16.0 + 22.0 / 60.0)
         let expected = [
             "2026-12-27T07:43:00+01:00", "2027-01-25T18:35:00+01:00",
             "2027-02-24T09:56:00+01:00", "2027-03-26T10:51:00+01:00",
