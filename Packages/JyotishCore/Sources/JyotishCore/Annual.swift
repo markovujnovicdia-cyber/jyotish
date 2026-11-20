@@ -20,7 +20,10 @@ public struct AnnualResult: Sendable {
     public let completedYears: Int
     public var lifeYear: Int { completedYears + 1 }
     public let chart: Chart
+    public let natalAscendantLongitude: Double
+    public let munthaLongitude: Double
     public let munthaSignIndex: Int
+    public var munthaLord: String { Astro.signLords[munthaSignIndex] }
     public var munthaSign: String { Astro.signs[munthaSignIndex] }
     public let isDay: Bool
     public let tajikaConvention: TajikaAspectConvention
@@ -38,6 +41,7 @@ public struct AnnualResult: Sendable {
     public let ithasala: [TajikaRelation]
     public let isarapha: [TajikaRelation]
     public let varsheshwara: VarsheshwaraResult
+    public let varsheshwaraConvention: VarsheshwaraConvention
 }
 
 public struct MasaResult: Sendable, Identifiable {
@@ -46,6 +50,12 @@ public struct MasaResult: Sendable, Identifiable {
     /// Exact UTC return instant. Python truncated this display value to a minute.
     public let returnDate: Date
     public let chart: Chart
+    /// These require annual context; legacy callers with no context get nil.
+    public let munthaLongitude: Double?
+    public let monthLord: VarsheshwaraResult?
+    public var munthaLord: String? {
+        munthaLongitude.map { Astro.signLords[Int($0 / 30)] }
+    }
     public let arudhaSign: Int
     public let bhriguBinduLongitude: Double
     public let gulika: GulikaResult?
@@ -116,7 +126,7 @@ public enum Annual {
 
     public static func muntha(natalAscendant: Double, completedYears: Int) -> Int {
         let sign = Int(Astro.normalize(natalAscendant) / 30)
-        return ((sign + completedYears) % 12 + 12) % 12
+        return ((sign + completedYears % 12) % 12 + 12) % 12
     }
 
     public static func activeYear(birthDate: Date, latitude: Double, longitude: Double, referenceDate: Date, birthTimeZone: TimeZone = TimeZone(secondsFromGMT: 0)!,
@@ -138,7 +148,8 @@ public enum Annual {
                                  muddaYearConvention: MuddaYearConvention = .solarReturnInterval,
                                  sahamsConvention: SahamsConvention = .legacyPython,
                                  nodeConvention: LunarNodeConvention = .swissSidereal,
-                                 timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> AnnualResult {
+                                 timeConvention: EphemerisTimeConvention = .currentSwiss,
+                                 varsheshwaraConvention: VarsheshwaraConvention = .legacyOrb) throws -> AnnualResult {
         guard birthDate.timeIntervalSince1970.isFinite, (1800...2398).contains(year) else {
             throw AnnualError.invalidInput("Podržane godine Varshaphale su 1800–2398.")
         }
@@ -156,7 +167,8 @@ public enum Annual {
         let end = Ephemeris.date(julianDay: nextJD)
         let chart = try Ephemeris.chart(date: start, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention, timeConvention: timeConvention)
         let age = year - birthYear
-        let munthaSign = muntha(natalAscendant: natal.ascendantLongitude, completedYears: age)
+        let annualMuntha = try Muntha.annualLongitude(natalAscendant: natal.ascendantLongitude, completedYears: age)
+        let munthaSign = Int(annualMuntha / 30)
         let isDay = try Ephemeris.isDaytime(julianDay: jd, latitude: latitude, longitude: longitude, timeConvention: timeConvention)
         let arudha = try SpecialPoints.arudha(houseSign: chart.ascendantSign, positions: chart.positions)
         let bhrigu = try SpecialPoints.bhriguBindu(moonLongitude: chart.positions["Mjesec"]!.longitude, rahuLongitude: chart.positions["Rahu"]!.longitude)
@@ -166,7 +178,8 @@ public enum Annual {
             : nil
         return AnnualResult(
             year: year, returnDate: start, nextReturnDate: end, completedYears: age,
-            chart: chart, munthaSignIndex: munthaSign, isDay: isDay, tajikaConvention: tajikaConvention,
+            chart: chart, natalAscendantLongitude: natal.ascendantLongitude,
+            munthaLongitude: annualMuntha, munthaSignIndex: munthaSign, isDay: isDay, tajikaConvention: tajikaConvention,
             sahams: try Sahams.calculate(ascendant: chart.ascendantLongitude, positions: chart.positions, isDay: isDay, convention: sahamsConvention, houseCusps: cusps),
             muddaDasha: try Dasha.mudda(natalMoonLongitude: moon.longitude, completedYears: age, start: start, end: end, yearConvention: muddaYearConvention),
             natalMoonLongitude: moon.longitude, muddaYearConvention: muddaYearConvention,
@@ -174,14 +187,25 @@ public enum Annual {
             arudhaSign: arudha, bhriguBinduLongitude: bhrigu, gulika: gulika.result, gulikaError: gulika.error,
             ithasala: try Tajika.ithasala(positions: chart.positions, aspectConvention: tajikaConvention),
             isarapha: try Tajika.isarapha(positions: chart.positions, aspectConvention: tajikaConvention),
-            varsheshwara: try Varsheshwara.calculate(natalAscendantSign: natal.ascendantSign, munthaSign: munthaSign, chart: chart, isDaytime: isDay)
+            varsheshwara: try Varsheshwara.calculate(natalAscendantSign: natal.ascendantSign, munthaSign: munthaSign, chart: chart, isDaytime: isDay, convention: varsheshwaraConvention),
+            varsheshwaraConvention: varsheshwaraConvention
         )
     }
 
     public static func masa(natalSunLongitude: Double, annualJulianDay: Double, latitude: Double, longitude: Double,
                              nodeConvention: LunarNodeConvention = .swissSidereal,
-                             timeConvention: EphemerisTimeConvention = .currentSwiss) throws -> [MasaResult] {
+                             timeConvention: EphemerisTimeConvention = .currentSwiss,
+                             annualContext: AnnualResult? = nil) throws -> [MasaResult] {
         guard natalSunLongitude.isFinite, annualJulianDay.isFinite else { throw AnnualError.invalidInput("Nevaljani podaci Masa Praveše.") }
+        if let annualContext {
+            guard abs(annualContext.chart.julianDay - annualJulianDay) <= 1e-8,
+                  annualContext.timeConvention == timeConvention,
+                  annualContext.lunarNodeConvention == nodeConvention,
+                  let annualSun = annualContext.chart.positions["Sunce"],
+                  abs(Astro.signedDifference(natalSunLongitude - annualSun.longitude)) <= 1e-6 else {
+                throw AnnualError.invalidInput("Mjesečna karta mora koristiti isti godišnji početak i model izračuna.")
+            }
+        }
         return try (0..<12).map { index in
             let target = Astro.normalize(natalSunLongitude + Double(index) * 30)
             let jd: Double
@@ -190,8 +214,28 @@ public enum Annual {
             let date = Ephemeris.date(julianDay: jd)
             let chart = try Ephemeris.chart(date: date, latitude: latitude, longitude: longitude, nodeConvention: nodeConvention, timeConvention: timeConvention)
             let gulika = optionalGulika(julianDay: jd, date: date, latitude: latitude, longitude: longitude, timeConvention: timeConvention)
+            let monthlyMuntha: Double?
+            let monthlyLord: VarsheshwaraResult?
+            if let annualContext {
+                let progressed = try Muntha.progressedLongitude(
+                    annualLongitude: annualContext.munthaLongitude,
+                    annualStart: annualContext.returnDate, at: date
+                )
+                monthlyMuntha = progressed
+                monthlyLord = try MasaLord.calculate(
+                    natalAscendantSign: Int(annualContext.natalAscendantLongitude / 30),
+                    annualLord: annualContext.varsheshwara.winner?.planet,
+                    munthaSign: Int(progressed / 30), chart: chart,
+                    isDaytime: Ephemeris.isDaytime(julianDay: jd, latitude: latitude, longitude: longitude,
+                                                   timeConvention: timeConvention)
+                )
+            } else {
+                monthlyMuntha = nil
+                monthlyLord = nil
+            }
             return MasaResult(
                 monthNumber: index + 1, returnDate: date, chart: chart,
+                munthaLongitude: monthlyMuntha, monthLord: monthlyLord,
                 arudhaSign: try SpecialPoints.arudha(houseSign: chart.ascendantSign, positions: chart.positions),
                 bhriguBinduLongitude: try SpecialPoints.bhriguBindu(moonLongitude: chart.positions["Mjesec"]!.longitude, rahuLongitude: chart.positions["Rahu"]!.longitude),
                 gulika: gulika.result, gulikaError: gulika.error

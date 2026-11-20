@@ -36,6 +36,8 @@ struct ContentView: View {
     @State private var year = Calendar.current.component(.year, from: .now)
     @State private var referenceDate = Date.now
     @State private var annualSelectionGeneration = UUID()
+    @State private var annualSelectionPersonID: UUID?
+    @State private var hasManualAnnualYear = false
     @State private var annualSelectionError: String?
     @State private var showAdd = false
     @State private var showPeople = false
@@ -179,13 +181,20 @@ struct ContentView: View {
             if let request { await calculations.calculate(request) }
         }
         .task(id: person) {
-            if let person { await selectCurrentAnnualYear(for: person) }
+            if annualSelectionPersonID != person?.id {
+                annualSelectionPersonID = person?.id
+                hasManualAnnualYear = false
+            }
+            if let person, !hasManualAnnualYear { await selectCurrentAnnualYear(for: person) }
         }
         .onChange(of: timeConvention) { _, _ in
             // Keep the selected comparison year and invalidate an older
             // automatic selection still running with the previous model.
             annualSelectionGeneration = UUID()
             annualSelectionError = nil
+            if !hasManualAnnualYear, let person {
+                Task { await selectCurrentAnnualYear(for: person) }
+            }
         }
         .onChange(of: person, initial: true) { _, _ in
             year = min(2398, max(birthYear, year))
@@ -216,6 +225,10 @@ struct ContentView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(screen.rawValue).font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+                if screen == .annual || screen == .masa {
+                    Text("Godišnji ciklus \(String(year))–\(String(year + 1))")
+                        .font(.headline).foregroundStyle(.secondary)
+                }
                 if let person {
                     Menu {
                         ForEach(store.people) { saved in
@@ -244,9 +257,14 @@ struct ContentView: View {
             DataCard {
                 Stepper("Godina povratka: \(year.formatted(.number.grouping(.never)))", value: Binding(
                     get: { year },
-                    set: { value in annualSelectionGeneration = UUID(); year = value }
+                    set: { value in
+                        annualSelectionGeneration = UUID()
+                        hasManualAnnualYear = true
+                        year = value
+                    }
                 ), in: min(2398, birthYear)...2398)
                 Button("Trenutačna Varshaphala", systemImage: "clock.arrow.circlepath") {
+                    hasManualAnnualYear = false
                     Task { await selectCurrentAnnualYear(for: person) }
                 }
                 if let annualSelectionError { Text(annualSelectionError).font(.caption).foregroundStyle(.red) }
@@ -626,7 +644,8 @@ private struct AnnualView: View {
             LabeledContent("Sljedeći povratak", value: BirthMoment.display(annual.nextReturnDate, zoneID: zoneID, seconds: true))
             LabeledContent("Navršene godine", value: "\(annual.completedYears)")
             LabeledContent("Godina života", value: "\(annual.lifeYear)")
-            LabeledContent("Muntha", value: annual.munthaSign)
+            LabeledContent("Muntha", value: AstroMath.positionDMS(annual.munthaLongitude))
+            LabeledContent("Vladar Munthe", value: annual.munthaLord)
             LabeledContent("Dnevni povratak", value: annual.isDay ? "Da" : "Ne")
             Text(zoneID).font(.caption).foregroundStyle(.secondary)
         }
@@ -645,6 +664,10 @@ private struct AnnualView: View {
         DataCard {
             Text("Varshesha · godišnji vladar").font(.headline)
             LabeledContent("Odabir", value: annual.varsheshwara.winner?.planet ?? "Nema kvalificiranog kandidata")
+            Text(annual.varsheshwaraConvention == .signAspect
+                 ? "Kandidat mora aspektirati znak godišnje lagne."
+                 : "Kandidat mora aspektirati godišnju lagnu unutar orbisa.")
+                .font(.caption).foregroundStyle(.secondary)
             ForEach(Array(annual.varsheshwara.candidates.enumerated()), id: \.offset) { _, candidate in
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(candidate.role) · \(candidate.planet)").font(.subheadline.weight(.semibold))
@@ -765,6 +788,22 @@ private struct MasaView: View {
             DataCard {
                 LabeledContent("Masa \(month.monthNumber)", value: BirthMoment.display(month.returnDate, zoneID: reportZoneID, seconds: true))
                 Text(reportZoneID).font(.caption).foregroundStyle(.secondary)
+                if let lord = month.monthLord {
+                    LabeledContent("Vladar mjeseca", value: lord.winner?.planet ?? "Nema kvalificiranog kandidata")
+                    DisclosureGroup("Kandidati za vladara mjeseca") {
+                        ForEach(lord.candidates) { candidate in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(candidate.role) · \(candidate.planet)")
+                                Text("Bala \(candidate.strengthScore, specifier: "%.2f") · aspekt znaka lagne: \(candidate.aspectsAscendant ? "da" : "ne")")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                if let muntha = month.munthaLongitude {
+                    LabeledContent("Muntha", value: AstroMath.positionDMS(muntha))
+                    LabeledContent("Vladar Munthe", value: month.munthaLord ?? "—")
+                }
             }
             ChartDataView(chart: month.chart)
             DataCard {

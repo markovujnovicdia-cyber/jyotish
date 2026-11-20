@@ -118,6 +118,10 @@ final class BirthInputTests: XCTestCase {
         XCTAssertEqual(result.sahamsConvention, .tajikaSripati)
         XCTAssertEqual(result.lunarNodeConvention, .meanTropicalTrueAyanamsa)
         XCTAssertEqual(result.timeConvention, .historical2019Forecast)
+        XCTAssertEqual(result.varsheshwaraConvention, .signAspect)
+        XCTAssertEqual(result.varsheshwara.winner?.planet, "Jupiter")
+        XCTAssertEqual(result.munthaSignIndex, 1)
+        XCTAssertEqual(result.munthaLord, "Venera")
         let printedReturn = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-12-27T06:43:23Z"))
         XCTAssertEqual(result.returnDate.timeIntervalSince1970, printedReturn.timeIntervalSince1970, accuracy: 0.5)
         let rahu = try XCTUnwrap(result.chart.positions["Rahu"])
@@ -154,6 +158,28 @@ final class BirthInputTests: XCTestCase {
         let first = try XCTUnwrap(output.mahaDashas.first)
         let years = try XCTUnwrap(Dasha.lordYears[first.lord])
         XCTAssertEqual(first.end.timeIntervalSince(first.start) / 86400, years * 365.25, accuracy: 1e-8)
+    }
+
+
+    func testMonthlyLordAndProgressedMunthaReachBothAppTargets() throws {
+        let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
+        let person = Person(name: "Monthly reference", birthDate: birth,
+                            latitude: 45.45, longitude: 16 + 22.0 / 60, timeZone: "Europe/Zagreb")
+        let request = CalculationRequest(person: person, kind: .masa, year: 2026, referenceDate: birth)
+        let output = try NativeCalculations.calculate(request)
+        let annual = try XCTUnwrap(output.annual)
+        XCTAssertEqual(output.months.count, 12)
+        XCTAssertEqual(output.months.prefix(6).map { $0.monthLord?.winner?.planet },
+                       ["Jupiter", "Venera", "Jupiter", "Venera", "Venera", "Venera"])
+        XCTAssertEqual(output.months.first?.munthaLongitude, annual.munthaLongitude)
+        XCTAssertTrue(output.months.allSatisfy { $0.munthaLongitude != nil && $0.monthLord != nil })
+        XCTAssertNotEqual(output.months.first?.munthaLongitude, output.months[1].munthaLongitude)
+    }
+
+    func testMunthaDMSFormattingCarriesRoundedSecondsAcrossSigns() {
+        XCTAssertEqual(AstroMath.positionDMS(46 + 30.0 / 60 + 57.0 / 3600), "Bik · 16°30′57″")
+        XCTAssertEqual(AstroMath.positionDMS(359.999999), "Ovan · 00°00′00″")
+        XCTAssertEqual(AstroMath.positionDMS(.nan), "—")
     }
 
 }

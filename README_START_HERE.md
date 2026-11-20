@@ -85,7 +85,7 @@ python3 scripts/validate_xcode_project.py
 ```
 
 U ovom Linux okruženju stvarno je kompajlirana C/Swift računska jezgra i
-**92 XCTest testa prolaze u Debug i Release konfiguraciji**. Referentni slučajevi
+**109 XCTest testova prolazi u Debug i Release konfiguraciji**. Referentni slučajevi
 pokrivaju četiri natalne, pet godišnjih i 60 mjesečnih karata te stotine Tajika
 provjera. Položaji se s istim Swiss datotekama uspoređuju unutar 1e-7 stupnja.
 Ispravljena je i pogreška simulatora: Swiss Ephemeris tiho odbacuje putanje

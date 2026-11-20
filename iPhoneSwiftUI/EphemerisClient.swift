@@ -145,12 +145,13 @@ enum NativeCalculations {
                 year: request.year, birthTimeZone: TimeZone(identifier: person.timeZone)!,
                 tajikaConvention: .longitudeBothOrbs, muddaYearConvention: .fixedGregorianYear,
                 sahamsConvention: .tajikaSripati, nodeConvention: .meanTropicalTrueAyanamsa,
-                timeConvention: timeConvention
+                timeConvention: timeConvention, varsheshwaraConvention: .signAspect
             )
             try Task.checkCancellation()
             if request.kind == .masa, let annual, let sun = natal.positions["Sunce"] {
                 months = try Annual.masa(natalSunLongitude: sun.longitude, annualJulianDay: annual.chart.julianDay, latitude: person.latitude, longitude: person.longitude,
-                                         nodeConvention: .meanTropicalTrueAyanamsa, timeConvention: timeConvention)
+                                         nodeConvention: .meanTropicalTrueAyanamsa, timeConvention: timeConvention,
+                                         annualContext: annual)
             }
         case .transit:
             transit = try Ephemeris.chart(date: request.referenceDate, latitude: person.latitude, longitude: person.longitude,

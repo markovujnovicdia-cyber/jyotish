@@ -42,6 +42,8 @@ Both targets share `NativeCalculations` and the core package. They select:
 | Manau | In-orb hostile aspect from Mars/Saturn to the faster member, including a slower malefic member | Exact five qualifying pairs |
 | Mudda | Fixed 365.2425-day year; preserve the elapsed phase before clipping subperiods | Supplied major/subperiod tables; distinct from Vimshottari |
 | Sahams | `tajikaSripati`: corrected Roga operand and Sripati cusp longitudes, retaining whole-sign house lords | Fifteen shared Sahams from the external reports |
+| Annual/monthly lords | Sign-aspect qualification; monthly candidates include annual lord | Six visible monthly ML labels; explicit year-lord diagnosis |
+| Muntha | Full natal degree plus completed years; continuous monthly progression | Six visible monthly increments within 1″ |
 
 The app's **Model vremena** selector controls the time convention separately.
 Changing it recomputes the same selected annual year, without resetting the
@@ -121,6 +123,10 @@ independently and does not silently alter the separate Mudda convention.
 
 ## Remaining scope
 
+The annual/monthly lord correction, full Muntha results, remaining July
+monthly-lord scope question and year-selection behavior are documented in
+[VARSHESHA_MASA_MUNTHA.md](VARSHESHA_MASA_MUNTHA.md).
+
 The PL list contains ten additional names absent from our current twenty:
 Mahatmya, Asha, Samartha, Gaurava, Jeeva, Kali, Mrityu, Paradara, Vanik and
 Karyasiddhi. Their formulas are not inferred from a single numerical result.
@@ -134,7 +140,7 @@ case is daytime; its night reversal remains the inherited convention.
 
 ## Validation
 
-All **92 core XCTest tests pass** in Linux Debug and Release. They include
+All **109 core XCTest tests pass** in Linux Debug and Release. They include
 external report checks, historical-forecast values from a separately compiled
 authoritative source, time-mode isolation, Sripati/lord selection, degree-based
 Vimshottari balance and the original unchanged Python-reference checks.

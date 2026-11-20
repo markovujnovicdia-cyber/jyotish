@@ -65,6 +65,14 @@ public struct VarsheshwaraResult: Codable, Equatable, Sendable {
     public var anyQualified: Bool { winner != nil }
 }
 
+/// Candidate eligibility is distinct from the degree/orb tests used for yogas.
+public enum VarsheshwaraConvention: String, Codable, Sendable {
+    case legacyOrb
+    /// A traditional Tajika sign aspect qualifies the candidate. Rank by full
+    /// Pancha Vargiya Bala; rounding is only for the displayed score.
+    case signAspect
+}
+
 public enum Varsheshwara {
     public static let triplicityDay = ["Sunce", "Venera", "Saturn", "Venera", "Jupiter", "Mjesec", "Merkur", "Mars", "Saturn", "Mars", "Jupiter", "Mjesec"]
     public static let triplicityNight = ["Jupiter", "Mjesec", "Merkur", "Mars", "Sunce", "Venera", "Saturn", "Venera", "Saturn", "Mars", "Jupiter", "Mjesec"]
@@ -104,17 +112,12 @@ public enum Varsheshwara {
     }
 
     public static func calculate(natalAscendantSign: Int, munthaSign: Int,
-                                  chart: Chart, isDaytime: Bool) throws -> VarsheshwaraResult {
-        guard chart.ascendantLongitude.isFinite, (0..<360).contains(chart.ascendantLongitude) else {
-            throw TajikaError.invalidCoordinate
-        }
-        guard [natalAscendantSign, munthaSign, chart.ascendantSign].allSatisfy({ (0..<12).contains($0) }) else {
+                                  chart: Chart, isDaytime: Bool,
+                                  convention: VarsheshwaraConvention = .legacyOrb) throws -> VarsheshwaraResult {
+        guard [natalAscendantSign, munthaSign].allSatisfy({ (0..<12).contains($0) }) else {
             throw TajikaError.invalidSign
         }
-        for planet in Tajika.planets {
-            guard let position = chart.positions[planet] else { throw TajikaError.missingPlanet(planet) }
-            guard position.longitude.isFinite, (0..<360).contains(position.longitude) else { throw TajikaError.invalidCoordinate }
-        }
+        try validate(chart: chart)
         let dayPlanet = chart.positions[isDaytime ? "Sunce" : "Mjesec"]!
         let definitions = [
             ("Janma Lagna Pati", Astro.signLords[natalAscendantSign]),
@@ -123,14 +126,42 @@ public enum Varsheshwara {
             ("Dina-Ratri Pati", Astro.signLords[dayPlanet.signIndex]),
             ("Tri-Rashi Pati", (isDaytime ? triplicityDay : triplicityNight)[chart.ascendantSign])
         ]
+        return try evaluate(definitions: definitions, chart: chart, convention: convention)
+    }
+
+    private static func validate(chart: Chart) throws {
+        guard chart.ascendantLongitude.isFinite, (0..<360).contains(chart.ascendantLongitude) else {
+            throw TajikaError.invalidCoordinate
+        }
+        guard (0..<12).contains(chart.ascendantSign) else {
+            throw TajikaError.invalidSign
+        }
+        for planet in Tajika.planets {
+            guard let position = chart.positions[planet] else { throw TajikaError.missingPlanet(planet) }
+            guard position.longitude.isFinite, (0..<360).contains(position.longitude) else { throw TajikaError.invalidCoordinate }
+        }
+    }
+
+    /// Shared numerical election for callers with independently defined annual
+    /// or monthly roles. This does not infer monthly candidate definitions.
+    static func evaluate(definitions: [(String, String)], chart: Chart,
+                          convention: VarsheshwaraConvention) throws -> VarsheshwaraResult {
+        try validate(chart: chart)
         var candidates: [VarsheshwaraCandidate] = []
         for (role, planet) in definitions {
+            guard Tajika.planets.contains(planet) else { throw TajikaError.invalidPlanet(planet) }
             let p = chart.positions[planet]!
             let strength = try bala(planet: planet, longitude: p.longitude)
             let aspect = Tajika.aspect(signA: p.signIndex, signB: chart.ascendantSign)
-            let qualifies = aspect.map {
-                abs(Tajika.residual(longitudeA: p.longitude, longitudeB: chart.ascendantLongitude, aspect: $0)) <= Tajika.deeptamsha[planet]!
-            } ?? false
+            let qualifies: Bool
+            switch convention {
+            case .signAspect:
+                qualifies = aspect != nil
+            case .legacyOrb:
+                qualifies = aspect.map {
+                    abs(Tajika.residual(longitudeA: p.longitude, longitudeB: chart.ascendantLongitude, aspect: $0)) <= Tajika.deeptamsha[planet]!
+                } ?? false
+            }
             // Decimal formatting preserves Python round(x, 2)'s treatment of the
             // actual binary Double; multiplying by 100 first can create false ties.
             let rounded = Double(String(format: "%.2f", locale: Locale(identifier: "en_US_POSIX"), strength.total))!
@@ -140,7 +171,9 @@ public enum Varsheshwara {
         // Python max retains the first equally scored qualified candidate.
         var winner: VarsheshwaraCandidate?
         for c in candidates where c.aspectsAscendant {
-            if winner == nil || c.strengthScore > winner!.strengthScore { winner = c }
+            let score = convention == .signAspect ? c.bala.total : c.strengthScore
+            let previousScore = winner.map { convention == .signAspect ? $0.bala.total : $0.strengthScore }
+            if previousScore == nil || score > previousScore! { winner = c }
         }
         return VarsheshwaraResult(candidates: candidates, winner: winner)
     }
