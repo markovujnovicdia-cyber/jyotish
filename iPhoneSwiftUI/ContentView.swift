@@ -575,6 +575,10 @@ private struct AnnualView: View {
     let annual: AnnualResult
     let zoneID: String
     @State private var karyeshaHouse = 7
+    @State private var fixedMuddaOffset = false
+    private var muddaZoneID: String {
+        ReportTimeZonePicker.displayZone(base: zoneID, referenceDate: annual.returnDate, fixed: fixedMuddaOffset)
+    }
     var body: some View {
         ChartDataView(chart: annual.chart)
         MonitorColumns {
@@ -637,6 +641,8 @@ private struct AnnualView: View {
     private var aspectsCard: some View {
         DataCard {
             Text("Tajika aspekti").font(.headline)
+            Text("Aspekti po stupnjevima · unutar orbisa obaju planeta")
+                .font(.caption).foregroundStyle(.secondary)
             relationRows(annual.ithasala, heading: "Ithasala · primjena")
             relationRows(annual.isarapha, heading: "Isarapha · separacija")
         }
@@ -644,7 +650,7 @@ private struct AnnualView: View {
 
     private var yogasCard: some View {
         DataCard {
-            Text("Tajika yoge").font(.headline)
+            Text("Tajika yoge · odabrani par").font(.headline)
             Picker("Kuća Karyeshe", selection: $karyeshaHouse) {
                 ForEach(1...12, id: \.self) { Text("Kuća \($0)").tag($0) }
             }
@@ -652,12 +658,12 @@ private struct AnnualView: View {
             let lagnesha = Astro.signLords[asc]
             let karyesha = Astro.signLords[(asc + karyeshaHouse - 1) % 12]
             LabeledContent("Lagnesha / Karyesha", value: "\(lagnesha) / \(karyesha)")
-            if let yogas = try? Tajika.karyeshaYogas(lagnesha: lagnesha, karyesha: karyesha, positions: annual.chart.positions, ascendantSign: asc) {
+            if let yogas = try? Tajika.karyeshaYogas(lagnesha: lagnesha, karyesha: karyesha, positions: annual.chart.positions, ascendantSign: asc, speedConvention: .ephemeris, aspectConvention: annual.tajikaConvention) {
                 ForEach(Array(yogas.enumerated()), id: \.offset) { _, yoga in
                     LabeledContent(yoga.name, value: yoga.applicable ? (yoga.found ? "Da" : "Ne") : "Nije primjenjivo")
                 }
             }
-            if let global = try? Tajika.globalYogas(positions: annual.chart.positions, ascendantSign: asc) {
+            if let global = try? Tajika.globalYogas(positions: annual.chart.positions, ascendantSign: asc, speedConvention: .ephemeris, aspectConvention: annual.tajikaConvention) {
                 ForEach(Array(global.enumerated()), id: \.offset) { _, yoga in
                     LabeledContent(yoga.name, value: yoga.applicable ? (yoga.found ? "Da" : "Ne") : "Nije primjenjivo")
                 }
@@ -678,9 +684,27 @@ private struct AnnualView: View {
     private var muddaCard: some View {
         DataCard {
             Text("Mudda daše").font(.headline)
-            Text("360 tradicionalnih dijelova razmjerno do sljedećeg solarnog povratka.").font(.caption).foregroundStyle(.secondary)
+            Text(annual.muddaYearConvention == .fixedGregorianYear
+                 ? "Mudda godina: 365,2425 dana. Početno podrazdoblje čuva protekli dio natalne nakshatre."
+                 : "360 tradicionalnih dijelova razmjerno do sljedećeg solarnog povratka.")
+                .font(.caption).foregroundStyle(.secondary)
+            ReportTimeZonePicker(zoneID: zoneID, referenceDate: annual.returnDate, fixed: $fixedMuddaOffset)
             ForEach(Array(annual.muddaDasha.enumerated()), id: \.offset) { _, period in
-                PeriodRow(period: period, zoneID: zoneID)
+                DisclosureGroup {
+                    if let children = try? Dasha.muddaSubperiods(
+                        parent: period, natalMoonLongitude: annual.natalMoonLongitude,
+                        annualStart: annual.returnDate, annualEnd: annual.nextReturnDate,
+                        yearConvention: annual.muddaYearConvention
+                    ) {
+                        ForEach(Array(children.enumerated()), id: \.offset) { _, child in
+                            PeriodRow(period: child, zoneID: muddaZoneID)
+                        }
+                    } else {
+                        Text("Podrazdoblja nisu dostupna.").foregroundStyle(.secondary)
+                    }
+                } label: {
+                    PeriodRow(period: period, zoneID: muddaZoneID)
+                }
             }
         }
     }
@@ -701,19 +725,24 @@ private struct MasaView: View {
     let months: [MasaResult]
     let zoneID: String
     @State private var selectedMonth = 1
+    @State private var fixedOffset = false
+    private var reportZoneID: String {
+        ReportTimeZonePicker.displayZone(base: zoneID, referenceDate: months.first?.returnDate ?? .now, fixed: fixedOffset)
+    }
     private var month: MasaResult? { months.first { $0.monthNumber == selectedMonth } }
     var body: some View {
         DataCard {
             Text("12 solarnih mjesečnih ulazaka").font(.headline)
+            ReportTimeZonePicker(zoneID: zoneID, referenceDate: months.first?.returnDate ?? .now, fixed: $fixedOffset)
             Picker("Masa", selection: $selectedMonth) {
-                ForEach(months) { Text("Masa \($0.monthNumber) · \(BirthMoment.display($0.returnDate, zoneID: zoneID))").tag($0.monthNumber) }
+                ForEach(months) { Text("Masa \($0.monthNumber) · \(BirthMoment.display($0.returnDate, zoneID: reportZoneID))").tag($0.monthNumber) }
             }.pickerStyle(.menu)
             Text("Prvi ulazak je Varsha Praveša; svaki sljedeći prati natalno Sunce +30°.").font(.caption).foregroundStyle(.secondary)
         }
         if let month {
             DataCard {
-                LabeledContent("Masa \(month.monthNumber)", value: BirthMoment.display(month.returnDate, zoneID: zoneID, seconds: true))
-                Text(zoneID).font(.caption).foregroundStyle(.secondary)
+                LabeledContent("Masa \(month.monthNumber)", value: BirthMoment.display(month.returnDate, zoneID: reportZoneID, seconds: true))
+                Text(reportZoneID).font(.caption).foregroundStyle(.secondary)
             }
             ChartDataView(chart: month.chart)
             DataCard {
@@ -962,6 +991,32 @@ struct MonitorColumns<Left: View, Right: View>: View {
         layout {
             left.frame(maxWidth: .infinity, alignment: .topLeading)
             right.frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+    }
+}
+
+/// A fixed offset makes older report timestamps comparable without moving the
+/// computed astronomical instant or changing the person's birth time zone.
+private struct ReportTimeZonePicker: View {
+    let zoneID: String
+    let referenceDate: Date
+    @Binding var fixed: Bool
+
+    static func displayZone(base: String, referenceDate: Date, fixed: Bool) -> String {
+        guard fixed, let zone = TimeZone(identifier: base),
+              let offset = TimeZone(secondsFromGMT: zone.secondsFromGMT(for: referenceDate)) else { return base }
+        return offset.identifier
+    }
+
+    var body: some View {
+        Picker("Prikaz vremena", selection: $fixed) {
+            Text(zoneID).tag(false)
+            Text("Stalni \(Self.displayZone(base: zoneID, referenceDate: referenceDate, fixed: true))").tag(true)
+        }
+        .pickerStyle(.menu)
+        if fixed {
+            Text("Stalni pomak s početka godine; bez promjene na ljetno vrijeme.")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 }

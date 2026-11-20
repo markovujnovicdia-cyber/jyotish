@@ -66,6 +66,13 @@ u ovu nativnu inačicu; njihov izvor nije uklonjen ni zamijenjen.
 
 ## Testovi i provjerene razlike
 
+Usporedba s dostavljenim izvještajima **Parashara’s Light 9** za Varshaphalu
+2026.–2027. sada pokriva natalne položaje planeta, Ithasala/Esharpha i Manau
+parove, Mudda razdoblja i devet mjesečnih povrataka. Obje aplikacije koriste
+korekcije u istoj jezgri. To nije potpuno podudaranje svih PL9 izračuna:
+preostale razlike, točnost vremenskih usporedbi i nedostajuće postavke navedene
+su u [referentnoj usporedbi](docs/PARASHARA_REFERENCE.md).
+
 ```sh
 bash scripts/test-core.sh
 bash scripts/test-core.sh -c release

@@ -18,6 +18,15 @@ public enum TajikaSpeedConvention: String, Codable, Sendable {
     case ephemeris, legacyMean
 }
 
+/// Explicit aspect conventions: keep the imported Python rules available while
+/// testing degree-based aspects against external reports.
+public enum TajikaAspectConvention: String, Codable, Sendable {
+    case legacySignBased
+    /// An angular aspect may cross a sign boundary; both planets must reach
+    /// the exact aspect within their individual deeptamsha.
+    case longitudeBothOrbs
+}
+
 public struct TajikaRelation: Codable, Equatable, Sendable, Identifiable {
     public let planetA: String
     public let planetB: String
@@ -87,7 +96,8 @@ public enum Tajika {
     }
 
     public static func analyze(_ a: PlanetPosition, _ b: PlanetPosition,
-                               speedConvention: TajikaSpeedConvention = .ephemeris) throws -> TajikaRelation {
+                               speedConvention: TajikaSpeedConvention = .ephemeris,
+                               aspectConvention: TajikaAspectConvention = .legacySignBased) throws -> TajikaRelation {
         guard a.name != b.name else { throw TajikaError.invalidPlanet(a.name) }
         guard let rankA = planets.firstIndex(of: a.name),
               let rankB = planets.firstIndex(of: b.name),
@@ -100,8 +110,18 @@ public enum Tajika {
         }
         let faster = rankA < rankB ? a.name : b.name
         let slower = rankA < rankB ? b.name : a.name
-        let combinedOrb = (orbA + orbB) / 2
-        guard let aspectName = aspect(signA: a.signIndex, signB: b.signIndex) else {
+        let combinedOrb = aspectConvention == .longitudeBothOrbs ? min(orbA, orbB) : (orbA + orbB) / 2
+        let aspectName: String?
+        if aspectConvention == .longitudeBothOrbs {
+            // Deterministic order also specifies behavior on midpoint ties.
+            aspectName = ["konjunkcija", "sekstil", "kvadrat", "trigon", "opozicija"].min {
+                abs(Self.residual(longitudeA: a.longitude, longitudeB: b.longitude, aspect: $0))
+                    < abs(Self.residual(longitudeA: a.longitude, longitudeB: b.longitude, aspect: $1))
+            }
+        } else {
+            aspectName = aspect(signA: a.signIndex, signB: b.signIndex)
+        }
+        guard let aspectName else {
             return TajikaRelation(planetA: a.name, planetB: b.name, faster: faster, slower: slower,
                                   aspect: nil, orbDifference: 999, combinedOrb: combinedOrb,
                                   withinOrb: false, isApplying: false, isExact: false,
@@ -123,28 +143,32 @@ public enum Tajika {
     }
 
     public static func relations(positions: [String: PlanetPosition],
-                                 speedConvention: TajikaSpeedConvention = .ephemeris) throws -> [TajikaRelation] {
+                                 speedConvention: TajikaSpeedConvention = .ephemeris,
+                                 aspectConvention: TajikaAspectConvention = .legacySignBased) throws -> [TajikaRelation] {
         let names = planets.filter { positions[$0] != nil }
         var result: [TajikaRelation] = []
         for (index, name) in names.enumerated() {
             for other in names.dropFirst(index + 1) {
-                result.append(try analyze(positions[name]!, positions[other]!, speedConvention: speedConvention))
+                result.append(try analyze(positions[name]!, positions[other]!, speedConvention: speedConvention, aspectConvention: aspectConvention))
             }
         }
         return result
     }
 
-    public static func ithasala(positions: [String: PlanetPosition]) throws -> [TajikaRelation] {
-        try relations(positions: positions).filter { $0.aspect != nil && $0.withinOrb && $0.isApplying }
+    public static func ithasala(positions: [String: PlanetPosition],
+                                 aspectConvention: TajikaAspectConvention = .legacySignBased) throws -> [TajikaRelation] {
+        try relations(positions: positions, aspectConvention: aspectConvention).filter { $0.aspect != nil && $0.withinOrb && $0.isApplying }
     }
 
-    public static func isarapha(positions: [String: PlanetPosition]) throws -> [TajikaRelation] {
-        try relations(positions: positions).filter { $0.aspect != nil && $0.withinOrb && $0.isSeparating }
+    public static func isarapha(positions: [String: PlanetPosition],
+                                 aspectConvention: TajikaAspectConvention = .legacySignBased) throws -> [TajikaRelation] {
+        try relations(positions: positions, aspectConvention: aspectConvention).filter { $0.aspect != nil && $0.withinOrb && $0.isSeparating }
     }
 
     public static func karyeshaYogas(lagnesha: String, karyesha: String,
                                      positions: [String: PlanetPosition], ascendantSign: Int,
-                                     speedConvention: TajikaSpeedConvention = .legacyMean) throws -> [TajikaYoga] {
+                                     speedConvention: TajikaSpeedConvention = .legacyMean,
+                                     aspectConvention: TajikaAspectConvention = .legacySignBased) throws -> [TajikaYoga] {
         guard (0..<12).contains(ascendantSign) else { throw TajikaError.invalidSign }
         try requireAll(positions)
         guard planets.contains(lagnesha), planets.contains(karyesha) else {
@@ -156,10 +180,11 @@ public enum Tajika {
             return pairNames.map { TajikaYoga(name: $0, found: false, participants: [lagnesha], applicable: false) }
         }
         let l = positions[lagnesha]!, k = positions[karyesha]!
-        let direct = try analyze(l, k, speedConvention: speedConvention)
+        let direct = try analyze(l, k, speedConvention: speedConvention, aspectConvention: aspectConvention)
         let hasIthasala = direct.aspect != nil && direct.withinOrb && direct.isApplying
         // Preserve Python's pair-yoga predicate, including its exact/stationary edge convention.
-        let hasIsarapha = direct.aspect != nil && direct.withinOrb && !direct.isApplying
+        let hasIsarapha = direct.aspect != nil && direct.withinOrb
+            && (aspectConvention == .legacySignBased ? !direct.isApplying : direct.isSeparating)
         var result = [TajikaYoga(name: "Ithasala", found: hasIthasala, participants: [lagnesha, karyesha]),
                       TajikaYoga(name: "Isarapha", found: hasIsarapha, participants: [lagnesha, karyesha])]
         var nakta: String?, yamaya: String?
@@ -167,8 +192,8 @@ public enum Tajika {
             let rankL = planets.firstIndex(of: lagnesha)!, rankK = planets.firstIndex(of: karyesha)!
             for (rankP, name) in planets.enumerated() where name != lagnesha && name != karyesha {
                 let p = positions[name]!
-                let relL = try analyze(p, l, speedConvention: speedConvention)
-                let relK = try analyze(p, k, speedConvention: speedConvention)
+                let relL = try analyze(p, l, speedConvention: speedConvention, aspectConvention: aspectConvention)
+                let relK = try analyze(p, k, speedConvention: speedConvention, aspectConvention: aspectConvention)
                 if relL.aspect != nil && relL.withinOrb && relK.aspect != nil && relK.withinOrb {
                     if rankP < rankL && rankP < rankK && nakta == nil { nakta = name }
                     else if rankP > rankL && rankP > rankK && yamaya == nil { yamaya = name }
@@ -179,17 +204,30 @@ public enum Tajika {
         result.append(TajikaYoga(name: "Yamaya", found: yamaya != nil, participants: [lagnesha, karyesha] + (yamaya.map { [$0] } ?? [])))
         var blockers: [String] = []
         if hasIthasala {
-            for name in ["Mars", "Saturn"] where name != lagnesha && name != karyesha {
-                if abs(Astro.signedDifference(positions[name]!.longitude - positions[direct.faster]!.longitude)) <= deeptamsha[name]! {
-                    blockers.append(name)
+            if aspectConvention == .longitudeBothOrbs {
+                for name in ["Mars", "Saturn"] where name != direct.faster {
+                    let relation = try analyze(positions[direct.faster]!, positions[name]!,
+                                               speedConvention: speedConvention,
+                                               aspectConvention: aspectConvention)
+                    if relation.withinOrb,
+                       let aspect = relation.aspect,
+                       ["konjunkcija", "kvadrat", "opozicija"].contains(aspect) {
+                        blockers.append(name)
+                    }
+                }
+            } else {
+                for name in ["Mars", "Saturn"] where name != lagnesha && name != karyesha {
+                    if abs(Astro.signedDifference(positions[name]!.longitude - positions[direct.faster]!.longitude)) <= deeptamsha[name]! {
+                        blockers.append(name)
+                    }
                 }
             }
         }
-        result.append(TajikaYoga(name: "Manau", found: !blockers.isEmpty, participants: [lagnesha, karyesha] + blockers))
+        result.append(TajikaYoga(name: "Manau", found: !blockers.isEmpty, participants: [lagnesha, karyesha] + blockers.filter { $0 != lagnesha && $0 != karyesha }))
         var kambula = false
         if hasIthasala && lagnesha != "Mjesec" && karyesha != "Mjesec" {
             for p in [l, k] {
-                let r = try analyze(positions["Mjesec"]!, p, speedConvention: speedConvention)
+                let r = try analyze(positions["Mjesec"]!, p, speedConvention: speedConvention, aspectConvention: aspectConvention)
                 if r.aspect != nil && r.withinOrb && r.isApplying { kambula = true }
             }
         }
@@ -220,7 +258,7 @@ public enum Tajika {
             for name in planets where name != lagnesha && name != karyesha {
                 let p = positions[name]!
                 for weakPlanet in [l, k] {
-                    let relation = try analyze(p, weakPlanet, speedConvention: speedConvention)
+                    let relation = try analyze(p, weakPlanet, speedConvention: speedConvention, aspectConvention: aspectConvention)
                     if relation.aspect != nil && relation.withinOrb && relation.isApplying
                         && strong.contains(PlanetDignity.classify(planet: name, signIndex: p.signIndex)) {
                         helper = name
@@ -238,14 +276,15 @@ public enum Tajika {
     }
 
     public static func globalYogas(positions: [String: PlanetPosition], ascendantSign: Int,
-                                   speedConvention: TajikaSpeedConvention = .legacyMean) throws -> [TajikaYoga] {
+                                   speedConvention: TajikaSpeedConvention = .legacyMean,
+                                     aspectConvention: TajikaAspectConvention = .legacySignBased) throws -> [TajikaYoga] {
         guard (0..<12).contains(ascendantSign) else { throw TajikaError.invalidSign }
         try requireAll(positions)
         let apoklima: Set<Int> = [3, 6, 9, 12]
         let houses = planets.map { Astro.house(sign: positions[$0]!.signIndex, ascendantSign: ascendantSign) }
         var khallasara = true
         for name in planets where name != "Mjesec" {
-            let r = try analyze(positions["Mjesec"]!, positions[name]!, speedConvention: speedConvention)
+            let r = try analyze(positions["Mjesec"]!, positions[name]!, speedConvention: speedConvention, aspectConvention: aspectConvention)
             if r.aspect != nil && r.withinOrb && r.isApplying { khallasara = false; break }
         }
         return [TajikaYoga(name: "Ishkavala", found: houses.allSatisfy { !apoklima.contains($0) }, participants: planets),

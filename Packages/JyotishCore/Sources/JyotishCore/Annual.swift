@@ -23,8 +23,12 @@ public struct AnnualResult: Sendable {
     public let munthaSignIndex: Int
     public var munthaSign: String { Astro.signs[munthaSignIndex] }
     public let isDay: Bool
+    public let tajikaConvention: TajikaAspectConvention
     public let sahams: [String: Double]
     public let muddaDasha: [DashaPeriod]
+    public let natalMoonLongitude: Double
+    public let muddaYearConvention: MuddaYearConvention
+    public let sahamsConvention: SahamsConvention
     public let arudhaSign: Int
     public let bhriguBinduLongitude: Double
     public let gulika: GulikaResult?
@@ -125,7 +129,10 @@ public enum Annual {
         return max(Ephemeris.julianDay(date: referenceDate) >= start ? year : year - 1, birth.year!)
     }
 
-    public static func calculate(birthDate: Date, latitude: Double, longitude: Double, year: Int, birthTimeZone: TimeZone = TimeZone(secondsFromGMT: 0)!) throws -> AnnualResult {
+    public static func calculate(birthDate: Date, latitude: Double, longitude: Double, year: Int, birthTimeZone: TimeZone = TimeZone(secondsFromGMT: 0)!,
+                                 tajikaConvention: TajikaAspectConvention = .legacySignBased,
+                                 muddaYearConvention: MuddaYearConvention = .solarReturnInterval,
+                                 sahamsConvention: SahamsConvention = .legacyPython) throws -> AnnualResult {
         guard birthDate.timeIntervalSince1970.isFinite, (1800...2398).contains(year) else {
             throw AnnualError.invalidInput("Podržane godine Varshaphale su 1800–2398.")
         }
@@ -150,12 +157,14 @@ public enum Annual {
         let gulika = optionalGulika(julianDay: jd, date: start, latitude: latitude, longitude: longitude)
         return AnnualResult(
             year: year, returnDate: start, nextReturnDate: end, completedYears: age,
-            chart: chart, munthaSignIndex: munthaSign, isDay: isDay,
-            sahams: try Sahams.calculate(ascendant: chart.ascendantLongitude, positions: chart.positions, isDay: isDay),
-            muddaDasha: try Dasha.mudda(natalMoonLongitude: moon.longitude, completedYears: age, start: start, end: end),
+            chart: chart, munthaSignIndex: munthaSign, isDay: isDay, tajikaConvention: tajikaConvention,
+            sahams: try Sahams.calculate(ascendant: chart.ascendantLongitude, positions: chart.positions, isDay: isDay, convention: sahamsConvention),
+            muddaDasha: try Dasha.mudda(natalMoonLongitude: moon.longitude, completedYears: age, start: start, end: end, yearConvention: muddaYearConvention),
+            natalMoonLongitude: moon.longitude, muddaYearConvention: muddaYearConvention,
+            sahamsConvention: sahamsConvention,
             arudhaSign: arudha, bhriguBinduLongitude: bhrigu, gulika: gulika.result, gulikaError: gulika.error,
-            ithasala: try Tajika.ithasala(positions: chart.positions),
-            isarapha: try Tajika.isarapha(positions: chart.positions),
+            ithasala: try Tajika.ithasala(positions: chart.positions, aspectConvention: tajikaConvention),
+            isarapha: try Tajika.isarapha(positions: chart.positions, aspectConvention: tajikaConvention),
             varsheshwara: try Varsheshwara.calculate(natalAscendantSign: natal.ascendantSign, munthaSign: munthaSign, chart: chart, isDaytime: isDay)
         )
     }

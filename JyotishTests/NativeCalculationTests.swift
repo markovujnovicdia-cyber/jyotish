@@ -106,4 +106,20 @@ final class BirthInputTests: XCTestCase {
         let output = try NativeCalculations.calculate(CalculationRequest(person: restored, kind: .ashtakavarga, year: 2026, referenceDate: Date()))
         XCTAssertEqual(output.ashtakavarga?.total, 337)
     }
+
+    func testAnnualReportConventionsReachApplicationCalculations() throws {
+        let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
+        let person = Person(name: "Annual reference", birthDate: birth,
+                            latitude: 45.4881, longitude: 16.3745, timeZone: "Europe/Zagreb")
+        let request = CalculationRequest(person: person, kind: .annual, year: 2026, referenceDate: birth)
+        let result = try XCTUnwrap(NativeCalculations.calculate(request).annual)
+        XCTAssertEqual(result.tajikaConvention, .longitudeBothOrbs)
+        XCTAssertEqual(result.muddaYearConvention, .fixedGregorianYear)
+        XCTAssertEqual(result.sahamsConvention, .tajikaRoga)
+        XCTAssertEqual(result.ithasala.count, 6)
+        XCTAssertEqual(result.isarapha.count, 3)
+        XCTAssertEqual(result.muddaDasha.last!.end.timeIntervalSince(result.returnDate) / 86400,
+                       365.2425, accuracy: 1e-8)
+    }
+
 }

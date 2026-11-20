@@ -1,5 +1,13 @@
 import Foundation
 
+/// Civil duration used to turn the traditional 360 Mudda parts into dates.
+/// The supplied PL9 annual report is consistent with a fixed Gregorian year,
+/// rather than the varying interval between successive astronomical returns.
+public enum MuddaYearConvention: String, Codable, Sendable {
+    case solarReturnInterval
+    case fixedGregorianYear
+}
+
 public struct DashaPeriod: Codable, Equatable, Sendable {
     public let lord: String
     public let start: Date
@@ -111,12 +119,13 @@ public enum Dasha {
     /// Without end, preserve the legacy 360 civil-day convention. Supplying the
     /// next solar return proportionally scales the same 360 parts to that date.
     public static func mudda(natalMoonLongitude: Double, completedYears: Int,
-                             start: Date, end: Date? = nil) throws -> [DashaPeriod] {
+                             start: Date, end: Date? = nil,
+                             yearConvention: MuddaYearConvention = .solarReturnInterval) throws -> [DashaPeriod] {
         guard start.timeIntervalSince1970.isFinite,
               end == nil || (end!.timeIntervalSince1970.isFinite && end! > start) else {
             throw NatalCalculationError.invalidPeriod
         }
-        let annualDays = end.map { $0.timeIntervalSince(start) / 86400 } ?? 360
+        let annualDays = muddaYearDays(start: start, end: end, convention: yearConvention)
         let scale = annualDays / 360
         let startingLord = try muddaStartingLord(natalMoonLongitude: natalMoonLongitude,
                                                  completedYears: completedYears)
@@ -137,9 +146,43 @@ public enum Dasha {
             totalDays += duration
             index += 1
         }
-        if let end, let last = periods.last {
+        if yearConvention == .solarReturnInterval, let end, let last = periods.last {
             periods[periods.count - 1] = DashaPeriod(lord: last.lord, start: last.start, end: end)
         }
         return periods
+    }
+
+    /// Preserve the already-elapsed phase of the first major period instead of
+    /// distributing nine new subperiods over its shortened visible balance.
+    /// The final, truncated major period is likewise clipped without rescaling.
+    public static func muddaSubperiods(parent: DashaPeriod, natalMoonLongitude: Double,
+                                       annualStart: Date, annualEnd: Date? = nil,
+                                       yearConvention: MuddaYearConvention = .solarReturnInterval) throws -> [DashaPeriod] {
+        guard annualStart.timeIntervalSince1970.isFinite,
+              annualEnd == nil || (annualEnd!.timeIntervalSince1970.isFinite && annualEnd! > annualStart),
+              parent.start.timeIntervalSince1970.isFinite,
+              parent.end.timeIntervalSince1970.isFinite,
+              parent.start >= annualStart, parent.end > parent.start,
+              let years = lordYears[parent.lord] else {
+            throw NatalCalculationError.invalidPeriod
+        }
+        let phase = try Nakshatra.at(longitude: natalMoonLongitude).fractionElapsed
+        let days = muddaYearDays(start: annualStart, end: annualEnd, convention: yearConvention)
+        let fullSeconds = years * 3 * days / 360 * 86400
+        let fullStart = parent.start == annualStart ? add(-fullSeconds * phase, to: annualStart) : parent.start
+        let fullEnd = add(fullSeconds, to: fullStart)
+        let full = DashaPeriod(lord: parent.lord, start: fullStart, end: fullEnd)
+        return try subperiods(parent: full).compactMap { child in
+            let start = max(parent.start, child.start)
+            let end = min(parent.end, child.end)
+            return end > start ? DashaPeriod(lord: child.lord, start: start, end: end) : nil
+        }
+    }
+
+    private static func muddaYearDays(start: Date, end: Date?, convention: MuddaYearConvention) -> Double {
+        switch convention {
+        case .solarReturnInterval: return end.map { $0.timeIntervalSince(start) / 86400 } ?? 360
+        case .fixedGregorianYear: return daysPerYear
+        }
     }
 }

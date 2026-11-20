@@ -126,7 +126,12 @@ enum NativeCalculations {
             major = try Dasha.mahadashas(moonLongitude: moon.longitude, birthDate: person.birthDate, yearsToCover: years)
             current = try Dasha.currentFiveLevels(moonLongitude: moon.longitude, birthDate: person.birthDate, at: request.referenceDate)
         case .annual, .masa:
-            annual = try Annual.calculate(birthDate: person.birthDate, latitude: person.latitude, longitude: person.longitude, year: request.year, birthTimeZone: TimeZone(identifier: person.timeZone)!)
+            annual = try Annual.calculate(
+                birthDate: person.birthDate, latitude: person.latitude, longitude: person.longitude,
+                year: request.year, birthTimeZone: TimeZone(identifier: person.timeZone)!,
+                tajikaConvention: .longitudeBothOrbs, muddaYearConvention: .fixedGregorianYear,
+                sahamsConvention: .tajikaRoga
+            )
             try Task.checkCancellation()
             if request.kind == .masa, let annual, let sun = natal.positions["Sunce"] {
                 months = try Annual.masa(natalSunLongitude: sun.longitude, annualJulianDay: annual.chart.julianDay, latitude: person.latitude, longitude: person.longitude)

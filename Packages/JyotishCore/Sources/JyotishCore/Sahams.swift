@@ -1,5 +1,11 @@
 import Foundation
 
+public enum SahamsConvention: String, Codable, Sendable {
+    case legacyPython
+    /// Correct the Roga operand to Saturn while retaining the other formulas.
+    case tajikaRoga
+}
+
 /// Twenty numeric saham longitudes, translated from `core/sahams.py`.
 /// Vivaha/Putra retain the source's fixed day/night convention and +30° arc correction.
 public enum Sahams {
@@ -11,7 +17,8 @@ public enum Sahams {
         return Astro.normalize(a - b + c + correction)
     }
 
-    public static func calculate(ascendant: Double, positions: [String: PlanetPosition], isDay: Bool) throws -> [String: Double] {
+    public static func calculate(ascendant: Double, positions: [String: PlanetPosition], isDay: Bool,
+                                 convention: SahamsConvention = .legacyPython) throws -> [String: Double] {
         for name in ["Sunce", "Mjesec", "Mars", "Merkur", "Jupiter", "Venera", "Saturn"] {
             guard let position = positions[name], position.longitude.isFinite else {
                 throw AnnualError.missingPlanet(name)
@@ -40,7 +47,7 @@ public enum Sahams {
             "Preeti": calc(sastra, punya), "Putra": calc(ju, mo, reverse: false),
             "Karma": calc(ma, me), "Vyapara": calc(ma, sa, reverse: false),
             "Artha": calc(house(2), lord(2), reverse: false),
-            "Labha": calc(house(11), lord(11), reverse: false), "Roga": calc(asc, mo),
+            "Labha": calc(house(11), lord(11), reverse: false), "Roga": calc(convention == .tajikaRoga ? sa : asc, mo),
             "Matri": calc(mo, ve), "Pitri": calc(sa, su), "Bandhu": calc(me, mo),
             "Bhratri": calc(ju, sa, reverse: false), "Rajya": calc(sa, su),
             "Sastra": sastra, "Sraddha": calc(ve, ma),
