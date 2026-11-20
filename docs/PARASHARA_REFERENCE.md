@@ -2,9 +2,13 @@
 
 The November 20, 2026 comparison uses the user-supplied `tajika.pdf` and
 screenshots of natal positions, the 2026–2027 Sahams, Mudda Dasha and monthly
-charts. The user identified the annual chart as December 27, 2026.
-The PDF SHA-256 is
-`899c0cd47257fd6335856f1f2a4d0cf871616fc28c0fd1420787430856e468c9`.
+charts, followed by `var.pdf` with exact annual positions and a second-precision
+return time. The user identified the annual chart as December 27, 2026.
+The PDF SHA-256 hashes are:
+
+- `tajika.pdf`: `899c0cd47257fd6335856f1f2a4d0cf871616fc28c0fd1420787430856e468c9`
+- `var.pdf`: `dc936cf6048c77af3b3d68b672238084b3a57f165b36bc57afad6bda7f43507b`
+
 The original documents are not redistributed in the repository.
 
 This is a partial reference comparison, not certification that all PL9
@@ -17,23 +21,37 @@ this to 10:55 UTC using Europe/Zagreb. Latitude 45.4881 and longitude 16.3745
 are provisional: the exact coordinates selected in PL9 have been requested.
 No coordinate, ayanamsha, ascendant or time offset is fitted to make a test pass.
 
-The screenshot prints natal planetary positions to seconds of arc. Those nine
-longitudes are independently transcribed. Seven classical planets pass a
-1 arcsecond comparison. The two node comparisons failed that precision:
-PL9 prints Rahu at Libra 06:38:18 and Ketu at Aries 06:38:18; our mean-node
-calculation gives 06:38:26.75, a difference of about 8.75 arcseconds for each.
-The passing regression covers the seven planets; the failed node comparison
-is retained here as an unresolved reference difference, with no widened
-precision budget and no fitted constant offset. The ascendant is not asserted to that precision until its exact
-location and house settings are available. PL9's annual start is printed as
-07:43 CET; the current solar return is approximately 07:43:36 CET.
+The screenshot prints natal planetary positions to seconds of arc. Seven
+classical planets pass a 1 arcsecond comparison. Initially, the default Swiss
+sidereal mean nodes differed by 8.75 arcseconds at birth and 9.98 arcseconds in
+the annual chart. The app now uses an explicit alternate coordinate convention:
+mean tropical node without nutation, minus true Lahiri ayanamsha. This agrees
+with BOTH supplied node epochs within 1 arcsecond, without a fitted constant.
+Node speed subtracts the ayanamsha's centered daily rate. The legacy Swiss
+sidereal mode remains available and unchanged in the core library.
+
+`var.pdf` gives the annual lagna as Sagittarius 12:15:23 and the return as
+07:43:23 CET. Our return remains approximately 07:43:36.5405 CET, **13.5405 seconds
+later**. Seven classical annual longitudes and their printed daily speeds agree
+within one arcsecond at our computed return. At the PL printed UT, several
+planetary positions differ more. A different Delta-T model is one possible
+explanation, but the PDF does not specify it and the available Swiss historical
+presets do not establish that explanation. No arbitrary time correction is made.
+
+The location remains unconfirmed. At the PDF's UT, coordinates 45.45 N,
+16.3667 E put the lagna about 4.10 arcseconds from the report, whereas the
+provisional 45.4881 N, 16.3745 E differ by about 107.19 arcseconds. These are
+coordinate diagnostics; the saved location has not been replaced by a fitted
+value. The PDF names Sisak but does not print its coordinates or house options.
 
 ## Changes selected by both application targets
 
-`NativeCalculations` explicitly selects these conventions for annual calculations:
+`NativeCalculations` selects the node convention for natal, annual, monthly
+and transit charts, and the following conventions for annual calculations:
 
 | Component | Application convention | Reference evidence |
 | --- | --- | --- |
+| Lunar nodes | `meanTropicalTrueAyanamsa`: non-nutated tropical mean node minus true Lahiri ayanamsha | Both natal and annual node longitudes within 1″; annual speed within 1″/day |
 | Tajika aspects | `longitudeBothOrbs`: angular geometry, including sign-boundary aspects; residual inside both individual deeptamshas | Exact sets of six Ithasala and three Esharpha pairs in the PDF |
 | Manau | In-orb conjunction, square or opposition from Mars/Saturn to the faster member, including a slower malefic member | Exact five qualifying pairs in the PDF |
 | Mudda year | `fixedGregorianYear`: 365.2425 civil days | Eight major starts substantially closer than scaling to the next astronomical return |
@@ -44,7 +62,7 @@ The aspect/orb convention is an explicit model consistent with this example;
 one chart does not establish every internal PL9 rule. Actual signed ephemeris
 speeds are used consistently in application pair and chart-wide aspect checks.
 The unchanged Python comparison remains available through the explicit library
-defaults `legacySignBased`, `solarReturnInterval` and `legacyPython`.
+defaults `legacySignBased`, `solarReturnInterval`, `legacyPython` and `swissSidereal`.
 
 ## Verified reference sets
 
@@ -79,13 +97,19 @@ against PL9.
 
 ## Remaining differences
 
-Twelve of the fifteen Sahams common to the visible screenshot and our list use
-compatible formulas. Yasha and Sastra agree within one arcsecond independently
-of the location; most others retain an ascendant-dependent discrepancy of about
-1′32″ with the provisional coordinates. Exact coordinates and house settings
-are needed before changing location-dependent values. Artha and Paradesa have
-larger differences consistent with different house cusps; no cusp convention
-has been guessed or substituted.
+Thirteen of the fifteen shared Sahams now pass a direct formula comparison
+using the annual PDF's OWN rounded ascendant and planetary longitudes, with
+Roga's corrected operand. Twelve are within 2 arcseconds and Mitra allows 3
+arcseconds because it combines more rounded operands; the largest observed
+residual is Mitra's 1 arcsecond. This verifies formulas separately from the
+still-unresolved location/return-time calculation. The two fully computed,
+ascendant-independent values Yasha and Sastra agree within one arcsecond.
+
+Most other computed Sahams still show about 1′32″ ascendant-dependent difference
+with the provisional coordinates. Exact coordinates, Delta-T and house settings
+are needed before changing those values. Artha and Paradesa have larger
+differences consistent with different house cusps; no cusp convention has been
+guessed or substituted.
 
 The visible PL9 list additionally contains Mahatmya, Asha, Samartha, Gaurava,
 Jeeva, Kali, Mrityu, Paradara, Vanik and Karyasiddhi. Their formulas are not
@@ -102,11 +126,10 @@ night reversal remains the inherited convention, not verified PL9 parity.
 
 ## Validation
 
-All 70 core XCTest tests passed on Linux in both Debug and Release, including
-the original Python reference suite and 19 new reference/edge-case tests. This
-count does not include the two unresolved node comparisons described above.
-The application bridge and its hosted test source additionally passed type
-checking with a temporary Combine shim; that shim is only a Linux compilation
-aid. SwiftUI syntax and project checks passed. iOS/Catalyst compilation, UI
-execution and the Apple-hosted application-wiring test require Xcode and have
-not run in this Linux session.
+All 77 core XCTest tests passed on Linux in both Debug and Release, including
+the original Python reference suite and 26 new external-reference/edge-case
+tests. The application bridge and its hosted test source additionally passed
+type checking with a temporary Combine shim; that shim is only a Linux
+compilation aid. SwiftUI syntax and project checks passed. iOS/Catalyst compilation,
+UI execution and the Apple-hosted application-wiring test require Xcode and
+have not run in this Linux session.

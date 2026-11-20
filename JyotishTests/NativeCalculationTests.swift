@@ -116,6 +116,9 @@ final class BirthInputTests: XCTestCase {
         XCTAssertEqual(result.tajikaConvention, .longitudeBothOrbs)
         XCTAssertEqual(result.muddaYearConvention, .fixedGregorianYear)
         XCTAssertEqual(result.sahamsConvention, .tajikaRoga)
+        XCTAssertEqual(result.lunarNodeConvention, .meanTropicalTrueAyanamsa)
+        let rahu = try XCTUnwrap(result.chart.positions["Rahu"])
+        XCTAssertEqual(rahu.longitude, 298 + 51.0 / 60 + 15.0 / 3600, accuracy: 1.0 / 3600)
         XCTAssertEqual(result.ithasala.count, 6)
         XCTAssertEqual(result.isarapha.count, 3)
         XCTAssertEqual(result.muddaDasha.last!.end.timeIntervalSince(result.returnDate) / 86400,

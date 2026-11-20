@@ -193,9 +193,9 @@ final class ParasharaReferenceTests: XCTestCase {
     func testSevenClassicalNatalPlanetLongitudesAgainstSuppliedPL9Screenshot() throws {
         // Transcribed D:M:S, not regenerated from this application's ephemeris.
         // Planet longitudes do not depend on the still-unconfirmed Sisak coordinates.
-        // Rahu/Ketu fail this 1-arcsecond comparison by about 8.75 arcseconds.
-        // Their unaltered reference values and failed comparison are recorded in
-        // docs/PARASHARA_REFERENCE.md; no arbitrary node offset is applied.
+        // The legacy node mode differs by about 8.75 arcseconds; the app's
+        // alternate coordinate convention is separately checked against both
+        // external epochs in NodePLReferenceTests, without a fitted offset.
         let birth = try XCTUnwrap(ISO8601DateFormatter().date(from: "1976-12-26T10:55:00Z"))
         let chart = try Ephemeris.chart(date: birth, latitude: 45.4881, longitude: 16.3745)
         let expected: [(String, Int, Int, Int, Int)] = [

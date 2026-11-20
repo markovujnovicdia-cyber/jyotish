@@ -105,7 +105,8 @@ enum NativeCalculations {
         try Task.checkCancellation()
         let person = request.person
         try person.validate()
-        let natal = try Ephemeris.chart(date: person.birthDate, latitude: person.latitude, longitude: person.longitude)
+        let natal = try Ephemeris.chart(date: person.birthDate, latitude: person.latitude, longitude: person.longitude,
+                                        nodeConvention: .meanTropicalTrueAyanamsa)
         try Task.checkCancellation()
         var special: NatalSpecialPoints?
         var annual: AnnualResult?
@@ -130,14 +131,16 @@ enum NativeCalculations {
                 birthDate: person.birthDate, latitude: person.latitude, longitude: person.longitude,
                 year: request.year, birthTimeZone: TimeZone(identifier: person.timeZone)!,
                 tajikaConvention: .longitudeBothOrbs, muddaYearConvention: .fixedGregorianYear,
-                sahamsConvention: .tajikaRoga
+                sahamsConvention: .tajikaRoga, nodeConvention: .meanTropicalTrueAyanamsa
             )
             try Task.checkCancellation()
             if request.kind == .masa, let annual, let sun = natal.positions["Sunce"] {
-                months = try Annual.masa(natalSunLongitude: sun.longitude, annualJulianDay: annual.chart.julianDay, latitude: person.latitude, longitude: person.longitude)
+                months = try Annual.masa(natalSunLongitude: sun.longitude, annualJulianDay: annual.chart.julianDay, latitude: person.latitude, longitude: person.longitude,
+                                         nodeConvention: .meanTropicalTrueAyanamsa)
             }
         case .transit:
-            transit = try Ephemeris.chart(date: request.referenceDate, latitude: person.latitude, longitude: person.longitude)
+            transit = try Ephemeris.chart(date: request.referenceDate, latitude: person.latitude, longitude: person.longitude,
+                                          nodeConvention: .meanTropicalTrueAyanamsa)
         case .ashtakavarga:
             ashtakavarga = try Ashtakavarga.calculate(chart: natal)
         }

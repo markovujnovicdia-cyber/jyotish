@@ -60,6 +60,14 @@ public enum EphemerisError: Error, LocalizedError {
     }
 }
 
+/// Explicit coordinate conventions for the mean lunar node. These never alter
+/// the seven classical planets, ayanamsha configuration or ascendant.
+public enum LunarNodeConvention: String, Codable, Sendable {
+    case swissSidereal
+    /// Mean tropical node without nutation, less true Lahiri ayanamsha.
+    case meanTropicalTrueAyanamsa
+}
+
 /// Swiss Ephemeris owns process-global state. Every C entry is serialized and its
 /// resource path/Lahiri mode restored under the same lock. No network is used.
 public enum Ephemeris {
@@ -100,22 +108,26 @@ public enum Ephemeris {
         guard latitude.isFinite, longitude.isFinite, latitude > -90, latitude < 90,
               longitude >= -180, longitude <= 180 else { throw EphemerisError.invalidCoordinates }
     }
-    private static func values(julianDay: Double, body: Int32) throws -> [Double] {
+    private static func values(julianDay: Double, body: Int32,
+                               nodeConvention: LunarNodeConvention = .swissSidereal) throws -> [Double] {
         var output = [Double](repeating: 0, count: 6)
         var error = [CChar](repeating: 0, count: 256)
-        let status = jy_calc(julianDay, body, &output, &error)
+        let status = body == 10 && nodeConvention == .meanTropicalTrueAyanamsa
+            ? jy_mean_node_true_ayanamsa(julianDay, &output, &error)
+            : jy_calc(julianDay, body, &output, &error)
         guard status >= 0 else { throw EphemerisError.calculation(String(cString: error)) }
         // Never silently replace bundled Swiss data with Moshier/JPL results.
         guard status & 2 != 0 else { throw EphemerisError.calculation("Swiss datoteke nisu korištene: \(String(cString: error))") }
         guard output.allSatisfy(\.isFinite) else { throw EphemerisError.calculation("Nekonačan položaj") }
         return output
     }
-    public static func positions(julianDay: Double) throws -> [String: PlanetPosition] {
+    public static func positions(julianDay: Double,
+                                  nodeConvention: LunarNodeConvention = .swissSidereal) throws -> [String: PlanetPosition] {
         lock.lock(); defer { lock.unlock() }
         try configure(julianDay: julianDay)
         var result: [String: PlanetPosition] = [:]
         for (name, code) in codes {
-            let output = try values(julianDay: julianDay, body: code)
+            let output = try values(julianDay: julianDay, body: code, nodeConvention: nodeConvention)
             result[name] = PlanetPosition(name: name, longitude: output[0], speed: output[3])
         }
         if let rahu = result["Rahu"] {
@@ -133,9 +145,10 @@ public enum Ephemeris {
         }
         return Astro.normalize(ascendant)
     }
-    public static func chart(date: Date, latitude: Double, longitude: Double) throws -> Chart {
+    public static func chart(date: Date, latitude: Double, longitude: Double,
+                              nodeConvention: LunarNodeConvention = .swissSidereal) throws -> Chart {
         let jd = julianDay(date: date)
-        return try Chart(julianDay: jd, ascendantLongitude: ascendant(julianDay: jd, latitude: latitude, longitude: longitude), positions: positions(julianDay: jd))
+        return try Chart(julianDay: jd, ascendantLongitude: ascendant(julianDay: jd, latitude: latitude, longitude: longitude), positions: positions(julianDay: jd, nodeConvention: nodeConvention))
     }
     public static func sunLongitude(julianDay: Double) throws -> Double {
         lock.lock(); defer { lock.unlock() }

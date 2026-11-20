@@ -2,6 +2,7 @@
 #include "swephexp.h"
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int jy_max_path_bytes(void) {
     /* Match swe_set_ephe_path's actual bound, including filename allowance. */
@@ -23,6 +24,53 @@ const char *jy_version(void) {
 }
 int jy_calc(double jd, int body, double *values, char *error) {
     return swe_calc_ut(jd, body, SEFLG_SIDEREAL | SEFLG_SWIEPH | SEFLG_SPEED, values, error);
+}
+int jy_mean_node_true_ayanamsa(double jd, double *values, char *error) {
+    double ayanamsha, before, after;
+    if (!isfinite(jd)) {
+        strcpy(error, "Non-finite Julian day for mean node");
+        return -1;
+    }
+    int result = swe_calc_ut(jd, SE_MEAN_NODE,
+                             SEFLG_SWIEPH | SEFLG_SPEED | SEFLG_NONUT, values, error);
+    if (result < 0) return result;
+    if (!(result & SEFLG_SWIEPH)) {
+        strcpy(error, "Swiss ephemeris flag missing from mean node result");
+        return -1;
+    }
+    int status = swe_get_ayanamsa_ex_ut(jd, SEFLG_SWIEPH, &ayanamsha, error);
+    if (status < 0) return status;
+    if (!(status & SEFLG_SWIEPH)) {
+        strcpy(error, "Swiss ephemeris flag missing from true ayanamsha");
+        return -1;
+    }
+    /* Symmetric one-day difference gives a speed in degrees per civil day.
+     * The circular difference remains defined if ayanamsha crosses zero. */
+    status = swe_get_ayanamsa_ex_ut(jd - 0.5, SEFLG_SWIEPH, &before, error);
+    if (status < 0) return status;
+    if (!(status & SEFLG_SWIEPH)) {
+        strcpy(error, "Swiss ephemeris flag missing from prior ayanamsha");
+        return -1;
+    }
+    status = swe_get_ayanamsa_ex_ut(jd + 0.5, SEFLG_SWIEPH, &after, error);
+    if (status < 0) return status;
+    if (!(status & SEFLG_SWIEPH)) {
+        strcpy(error, "Swiss ephemeris flag missing from subsequent ayanamsha");
+        return -1;
+    }
+    if (!isfinite(ayanamsha) || !isfinite(before) || !isfinite(after)) {
+        strcpy(error, "Non-finite true ayanamsha");
+        return -1;
+    }
+    values[0] = swe_degnorm(values[0] - ayanamsha);
+    values[3] -= swe_difdeg2n(after, before);
+    for (int index = 0; index < 6; index++) {
+        if (!isfinite(values[index])) {
+            strcpy(error, "Non-finite mean node result");
+            return -1;
+        }
+    }
+    return result;
 }
 int jy_ascendant(double jd, double latitude, double longitude, double *ascendant) {
     double cusps[13], ascmc[10];
